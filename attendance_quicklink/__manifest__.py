@@ -23,6 +23,6 @@
     'application': True,
     'sequence': -1111,
     'license': 'LGPL-3',
-    'price': 49.99,
+    'price': 20.00,
     'currency': 'EUR',
 }
