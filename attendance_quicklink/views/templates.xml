@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="quick_checkin_page" name="Fichaje rápido">
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+                <title>Fichaje</title>
+                <link t-attf-rel="manifest" t-attf-href="/fichaje/#{token}/manifest.json"/>
+                <meta name="theme-color" content="#6200ea"/>
+                <meta name="mobile-web-app-capable" content="yes"/>
+                <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+                <style>
+                    * { box-sizing: border-box; margin: 0; padding: 0; }
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        min-height: 100vh;
+                        background: linear-gradient(135deg, #6200ea 0%, #9c27b0 100%);
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        padding: 30px 15px;
+                        color: #333;
+                    }
+                    .header { color: white; text-align: center; margin-bottom: 25px; }
+                    .avatar {
+                        width: 80px; height: 80px; border-radius: 50%;
+                        background: white; color: #6200ea;
+                        font-size: 36px; font-weight: bold;
+                        display: flex; align-items: center; justify-content: center;
+                        margin: 0 auto 10px;
+                    }
+                    .header h1 { font-size: 22px; font-weight: 600; }
+                    .header .subtitle { font-size: 14px; opacity: 0.85; margin-top: 4px; }
+                    .card {
+                        background: white; border-radius: 20px;
+                        box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+                        padding: 25px; width: 100%; max-width: 380px; margin-bottom: 15px;
+                    }
+                    .msg-ok {
+                        font-size: 18px; font-weight: 600;
+                        padding: 14px; border-radius: 12px;
+                        margin-bottom: 18px; text-align: center;
+                    }
+                    .msg-entrada { background: #e8f5e9; color: #2e7d32; }
+                    .msg-salida { background: #ffebee; color: #c62828; }
+                    .btn {
+                        display: block; width: 100%; padding: 18px;
+                        font-size: 20px; font-weight: 700;
+                        color: white; border: none; border-radius: 14px;
+                        cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+                    }
+                    .btn-entrada { background: linear-gradient(135deg, #2e7d32, #43a047); }
+                    .btn-salida { background: linear-gradient(135deg, #c62828, #e53935); }
+                    .btn:active { transform: scale(0.97); }
+                    .ring-container { display: flex; flex-direction: column; align-items: center; margin: 20px 0; }
+                    .ring-wrapper { position: relative; width: 150px; height: 150px; }
+                    .ring-bg, .ring-fill { fill: none; stroke-width: 12; stroke-linecap: round; }
+                    .ring-bg { stroke: #e0e0e0; }
+                    .ring-fill { stroke: #43a047; transition: stroke-dashoffset 0.5s; }
+                    .ring-text {
+                        position: absolute; top: 50%; left: 50%;
+                        transform: translate(-50%, -50%); text-align: center;
+                    }
+                    .ring-hours { font-size: 28px; font-weight: 700; color: #333; }
+                    .ring-label { font-size: 12px; color: #999; }
+                    .info-row {
+                        display: flex; justify-content: space-between; align-items: center;
+                        padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 15px;
+                    }
+                    .info-row:last-child { border-bottom: none; }
+                    .info-label { color: #888; }
+                    .info-value { font-weight: 600; }
+                    .overtime-pos { color: #2e7d32; }
+                    .overtime-neg { color: #c62828; }
+                    .status-dot {
+                        display: inline-block; width: 10px; height: 10px;
+                        border-radius: 50%; margin-right: 6px;
+                    }
+                    .dot-in { background: #43a047; }
+                    .dot-out { background: #e53935; }
+
+                    /* Calendario */
+                    .cal-header {
+                        display: flex; justify-content: space-between;
+                        align-items: center; margin-bottom: 15px;
+                    }
+                    .cal-header h2 { font-size: 18px; font-weight: 600; }
+                    .cal-nav {
+                        background: none; border: none; font-size: 22px;
+                        color: #6200ea; cursor: pointer; padding: 5px 10px;
+                    }
+                    .cal-grid {
+                        display: grid; grid-template-columns: repeat(7, 1fr);
+                        gap: 4px; text-align: center;
+                    }
+                    .cal-dow {
+                        font-size: 11px; color: #999; font-weight: 600;
+                        padding: 4px 0; text-transform: uppercase;
+                    }
+                    .cal-day {
+                        border-radius: 10px; padding: 6px 2px;
+                        min-height: 50px; font-size: 13px;
+                        display: flex; flex-direction: column;
+                        align-items: center; justify-content: center;
+                    }
+                    .cal-day.empty { background: transparent; }
+                    .cal-day.has-hours { background: #e8f5e9; }
+                    .cal-day.no-hours { background: #f5f5f5; }
+                    .cal-day.is-today {
+                        border: 2px solid #6200ea;
+                        font-weight: 700;
+                    }
+                    .cal-day-num { font-size: 14px; font-weight: 600; }
+                    .cal-day-hours { font-size: 10px; color: #2e7d32; font-weight: 600; margin-top: 2px; }
+
+                    /* Días de ausencia */
+                    .cal-day.is-leave-validate { background: #e3f2fd; }
+                    .cal-day.is-leave-validate1 { background: #fff3e0; }
+                    .cal-day.is-leave-confirm { background: #fff9c4; }
+                    .cal-day-leave {
+                        font-size: 9px; color: #1565c0; font-weight: 600;
+                        margin-top: 2px; max-width: 100%;
+                        overflow: hidden; white-space: nowrap;
+                    }
+                    .cal-day.is-leave-validate1 .cal-day-leave { color: #e65100; }
+                    .cal-day.is-leave-confirm .cal-day-leave { color: #f57f17; }
+
+                    /* Leyenda ausencias */
+                    .leave-legend {
+                        display: flex; gap: 10px; flex-wrap: wrap;
+                        margin-top: 12px; font-size: 11px; color: #888;
+                    }
+                    .leave-legend-item { display: flex; align-items: center; gap: 4px; }
+                    .legend-dot {
+                        width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0;
+                    }
+                    .legend-dot-validate { background: #e3f2fd; border: 1px solid #90caf9; }
+                    .legend-dot-validate1 { background: #fff3e0; border: 1px solid #ffcc02; }
+                    .legend-dot-confirm { background: #fff9c4; border: 1px solid #f9a825; }
+
+                    /* Formulario de ausencia */
+                    .section-title {
+                        font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #333;
+                    }
+                    .form-field { margin-bottom: 14px; }
+                    .form-field label {
+                        display: block; font-size: 13px; color: #888; margin-bottom: 5px;
+                    }
+                    .form-field select,
+                    .form-field input[type="date"],
+                    .form-field input[type="time"] {
+                        width: 100%; padding: 10px 12px;
+                        border: 1px solid #e0e0e0; border-radius: 10px;
+                        font-size: 14px; background: #fafafa;
+                        appearance: none; -webkit-appearance: none;
+                    }
+                    .btn-solicitar {
+                        display: block; width: 100%; padding: 14px;
+                        background: linear-gradient(135deg, #6200ea, #9c27b0);
+                        color: white; border: none; border-radius: 12px;
+                        font-size: 16px; font-weight: 700; cursor: pointer;
+                        margin-top: 6px; letter-spacing: 0.5px;
+                    }
+                    .btn-solicitar:active { transform: scale(0.97); }
+                    .no-types-msg { font-size: 14px; color: #aaa; text-align: center; padding: 10px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="avatar">
+                        <t t-out="employee.name[:1].upper()"/>
+                    </div>
+                    <h1 t-out="employee.name"/>
+                    <div class="subtitle" t-out="employee.job_id.name or ''"/>
+                </div>
+
+                <div class="card">
+                    <t t-if="done">
+                        <t t-if="employee.attendance_state == 'checked_in'">
+                            <div class="msg-ok msg-entrada">&#x2705; Entrada registrada</div>
+                        </t>
+                        <t t-else="">
+                            <div class="msg-ok msg-salida">Salida registrada</div>
+                        </t>
+                    </t>
+                    <t t-if="employee.attendance_state == 'checked_in'">
+                        <form t-attf-action="/fichaje/#{token}/fichar" method="post" id="form-fichar">
+                            <input type="hidden" name="latitude" id="geo-lat"/>
+                            <input type="hidden" name="longitude" id="geo-lon"/>
+                            <button type="submit" class="btn btn-salida">
+                                <span class="status-dot dot-in"/> Fichar Salida
+                            </button>
+                        </form>
+                    </t>
+                    <t t-else="">
+                        <form t-attf-action="/fichaje/#{token}/fichar" method="post" id="form-fichar">
+                            <input type="hidden" name="latitude" id="geo-lat"/>
+                            <input type="hidden" name="longitude" id="geo-lon"/>
+                            <button type="submit" class="btn btn-entrada">
+                                <span class="status-dot dot-out"/> Fichar Entrada
+                            </button>
+                        </form>
+                    </t>
+                </div>
+
+                <div class="card">
+                    <div class="ring-container">
+                        <div class="ring-wrapper">
+                            <svg viewBox="0 0 160 160">
+                                <circle class="ring-bg" cx="80" cy="80" r="65"/>
+                                <circle class="ring-fill" cx="80" cy="80" r="65"
+                                    stroke-dasharray="408.4"
+                                    t-attf-stroke-dashoffset="{{ 408.4 - (408.4 * week_pct / 100) }}"
+                                    transform="rotate(-90 80 80)"/>
+                            </svg>
+                            <div class="ring-text">
+                                <div class="ring-hours" t-out="week_hours"/>
+                                <div class="ring-label">semanales</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Hoy</span>
+                        <span class="info-value" t-out="today_hours"/>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Jornada semanal</span>
+                        <span class="info-value" t-out="target_week"/>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Horas extra acumuladas</span>
+                        <span t-attf-class="info-value {{ 'overtime-pos' if overtime_sign == '+' else 'overtime-neg' }}">
+                            <t t-out="overtime_sign"/><t t-out="total_overtime"/>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="section-title">Solicitar corrección de fichaje</div>
+                    <t t-if="correction_done">
+                        <div class="msg-ok msg-entrada" style="margin-bottom:15px;">&#x2705; Solicitud enviada correctamente</div>
+                    </t>
+                    <t t-if="correction_error">
+                        <div class="msg-ok msg-salida" style="margin-bottom:15px;">&#x274C; Error al enviar la solicitud. Contacta con RRHH.</div>
+                    </t>
+                    <p style="font-size:13px;color:#888;margin-bottom:14px;">
+                        ¿Olvidaste fichar o cometiste un error? Indica la fecha y las horas correctas y se enviará una solicitud para que RRHH corrija el registro.
+                    </p>
+                    <form t-attf-action="/fichaje/#{token}/correccion" method="post">
+                        <div class="form-field">
+                            <label>Fecha</label>
+                            <input type="date" name="correction_date" required="required"/>
+                        </div>
+                        <div class="form-field">
+                            <label>Hora de entrada</label>
+                            <input type="time" name="correction_check_in" required="required"/>
+                        </div>
+                        <div class="form-field">
+                            <label>Hora de salida</label>
+                            <input type="time" name="correction_check_out" required="required"/>
+                        </div>
+                        <button type="submit" class="btn-solicitar">Enviar solicitud</button>
+                    </form>
+                </div>
+
+                <!-- Calendario mensual -->
+                <div class="card">
+                    <div class="cal-header">
+                        <a t-attf-href="/fichaje/#{token}?year=#{prev_year}&amp;month=#{prev_month}" class="cal-nav">&#x25C0;</a>
+                        <h2><t t-out="cal_month_name"/> <t t-out="cal_year"/></h2>
+                        <a t-attf-href="/fichaje/#{token}?year=#{next_year}&amp;month=#{next_month}" class="cal-nav">&#x25B6;</a>
+                    </div>
+                    <div class="cal-grid">
+                        <div class="cal-dow">L</div>
+                        <div class="cal-dow">M</div>
+                        <div class="cal-dow">X</div>
+                        <div class="cal-dow">J</div>
+                        <div class="cal-dow">V</div>
+                        <div class="cal-dow">S</div>
+                        <div class="cal-dow">D</div>
+                        <t t-foreach="weeks" t-as="week">
+                            <t t-foreach="week" t-as="d">
+                                <t t-if="not d['current_month']">
+                                    <div class="cal-day empty"/>
+                                </t>
+                                <t t-elif="d['leave']">
+                                    <div t-attf-class="cal-day is-leave-{{ d['leave']['state'] }} {{ 'is-today' if d['today'] else '' }}">
+                                        <span class="cal-day-num" t-out="d['day']"/>
+                                        <span class="cal-day-leave" t-out="d['leave']['type']"/>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div t-attf-class="cal-day {{ 'has-hours' if d['secs'] else 'no-hours' }} {{ 'is-today' if d['today'] else '' }}">
+                                        <span class="cal-day-num" t-out="d['day']"/>
+                                        <t t-if="d['secs']">
+                                            <span class="cal-day-hours" t-out="d['hours_fmt']"/>
+                                        </t>
+                                    </div>
+                                </t>
+                            </t>
+                        </t>
+                    </div>
+                    <div class="leave-legend">
+                        <div class="leave-legend-item">
+                            <div class="legend-dot legend-dot-validate"></div>Aprobada
+                        </div>
+                        <div class="leave-legend-item">
+                            <div class="legend-dot legend-dot-validate1"></div>2ª aprobación
+                        </div>
+                        <div class="leave-legend-item">
+                            <div class="legend-dot legend-dot-confirm"></div>Pendiente
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Solicitar ausencia -->
+                <div class="card">
+                    <div class="section-title">Solicitar ausencia</div>
+                    <t t-if="leave_done">
+                        <div class="msg-ok msg-entrada" style="margin-bottom: 15px;">&#x2705; Solicitud enviada correctamente</div>
+                    </t>
+                    <t t-if="leave_error">
+                        <div class="msg-ok msg-salida" style="margin-bottom: 15px;">&#x274C; Error al enviar la solicitud</div>
+                    </t>
+                    <t t-if="leave_types">
+                        <form t-attf-action="/fichaje/#{token}/solicitar" method="post" id="leave-form">
+                            <div class="form-field">
+                                <label>Tipo de ausencia</label>
+                                <select name="leave_type" id="leave-type-select">
+                                    <t t-foreach="leave_types" t-as="lt">
+                                        <option t-att-value="lt['id']" t-att-data-unit="lt['request_unit']">
+                                            <t t-out="lt['label']"/>
+                                        </option>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label>Fecha</label>
+                                <input type="date" name="date_from" required="required"/>
+                            </div>
+                            <div class="form-field" id="field-date-to">
+                                <label>Hasta</label>
+                                <input type="date" name="date_to" id="input-date-to"/>
+                            </div>
+                            <div class="form-field" id="field-hour-from" style="display:none;">
+                                <label>Hora inicio</label>
+                                <input type="time" name="hour_from" id="input-hour-from"/>
+                            </div>
+                            <div class="form-field" id="field-hour-to" style="display:none;">
+                                <label>Hora fin</label>
+                                <input type="time" name="hour_to" id="input-hour-to"/>
+                            </div>
+                            <button type="submit" class="btn-solicitar">Solicitar</button>
+                        </form>
+                    </t>
+                    <t t-else="">
+                        <p class="no-types-msg">No hay tipos de ausencia disponibles.</p>
+                    </t>
+                </div>
+
+                <script>
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.register('/fichaje/sw.js', {scope: '/fichaje/'});
+                    }
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(function(pos) {
+                            var latEl = document.getElementById('geo-lat');
+                            var lonEl = document.getElementById('geo-lon');
+                            if (latEl) latEl.value = pos.coords.latitude;
+                            if (lonEl) lonEl.value = pos.coords.longitude;
+                        });
+                    }
+                    var leaveSelect = document.getElementById('leave-type-select');
+                    function updateLeaveFields() {
+                        if (!leaveSelect) return;
+                        var opt = leaveSelect.options[leaveSelect.selectedIndex];
+                        var unit = opt ? opt.getAttribute('data-unit') : 'day';
+                        var isHour = (unit === 'hour');
+                        document.getElementById('field-date-to').style.display = isHour ? 'none' : '';
+                        document.getElementById('field-hour-from').style.display = isHour ? '' : 'none';
+                        document.getElementById('field-hour-to').style.display = isHour ? '' : 'none';
+                        document.getElementById('input-date-to').required = !isHour;
+                        document.getElementById('input-hour-from').required = isHour;
+                        document.getElementById('input-hour-to').required = isHour;
+                    }
+                    if (leaveSelect) {
+                        leaveSelect.addEventListener('change', updateLeaveFields);
+                        updateLeaveFields();
+                    }
+                </script>
+            </body>
+        </html>
+    </template>
+</odoo>

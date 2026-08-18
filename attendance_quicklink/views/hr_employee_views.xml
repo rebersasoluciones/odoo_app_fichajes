@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_form_quicklink" model="ir.ui.view">
+        <field name="name">hr.employee.form.attendance.quicklink</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_title')]" position="after">
+                <group string="Fichaje rápido" groups="hr_attendance.group_hr_attendance_manager">
+                    <field name="attendance_quick_url"
+                           widget="url"
+                           readonly="1"
+                           string="URL fichaje rápido"/>
+                    <div colspan="2" class="d-flex gap-2 mt-1">
+                        <button name="action_regenerate_attendance_quick_token"
+                                type="object"
+                                string="Regenerar enlace"
+                                confirm="El enlace anterior dejará de funcionar. ¿Continuar?"
+                                class="btn btn-secondary btn-sm"/>
+                        <button name="action_regenerate_all_tokens"
+                                type="object"
+                                string="Regenerar TODOS los tokens"
+                                confirm="Se regenerarán los enlaces de TODOS los empleados. ¿Continuar?"
+                                class="btn btn-danger btn-sm"/>
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

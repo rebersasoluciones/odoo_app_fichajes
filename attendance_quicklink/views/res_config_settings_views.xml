@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_attendance_quicklink" model="ir.ui.view">
+        <field name="name">res.config.settings.attendance.quicklink</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="hr_attendance.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='overtime_settings']" position="after">
+                <block title="Informe diario de fichajes" name="quicklink_report_settings">
+                    <setting string="Email del informe diario"
+                        help="Dirección a la que se envía el informe automático de incidencias de fichaje cada noche.">
+                        <field name="attendance_quicklink_report_email"
+                            placeholder="responsable@empresa.com"/>
+                    </setting>
+                    <setting string="Margen de tolerancia"
+                        help="Minutos de diferencia respecto a la jornada teórica a partir de los cuales el fichaje se considera una incidencia.">
+                        <field name="attendance_quicklink_report_margin"
+                            class="text-center" style="width: 5ch;"/>
+                        <span class="ms-2">minutos</span>
+                    </setting>
+                    <setting string="Email para solicitudes de corrección de fichaje"
+                        help="Dirección a la que se envían las solicitudes de corrección enviadas por los empleados desde su página de fichaje.">
+                        <field name="attendance_quicklink_correction_email"
+                            placeholder="rrhh@empresa.com"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>
