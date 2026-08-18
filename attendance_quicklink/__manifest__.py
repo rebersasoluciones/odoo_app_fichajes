@@ -18,6 +18,7 @@
         'views/hr_leave_calendar_inherit.xml',
     ],
     'post_init_hook': '_generate_tokens',
+    'images': ['static/description/banner.png'],
     'installable': True,
     'application': True,
     'sequence': -1111,
