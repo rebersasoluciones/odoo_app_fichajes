@@ -1,197 +1,335 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8"/>
+    <meta charset="UTF-8" />
     <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; margin: 0; padding: 0; }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
 
         .lc-header {
             background: linear-gradient(135deg, #6200ea 0%, #7c3aed 60%, #9c27b0 100%);
             padding: 48px 40px;
             text-align: center;
         }
-        .lc-header h1 { color: #ffffff; font-size: 2.4rem; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.5px; }
-        .lc-header p { color: #d8b4fe; font-size: 1.1rem; margin: 0; }
+
+        .lc-header h1 {
+            color: #ffffff;
+            font-size: 2.4rem;
+            font-weight: 700;
+            margin: 0 0 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .lc-header p {
+            color: #d8b4fe;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
         .lc-badge {
-            display: inline-block; margin-top: 18px; background: #ffffff22;
-            color: #fff; font-size: 0.78rem; font-weight: 600;
-            letter-spacing: 1px; text-transform: uppercase;
-            padding: 4px 14px; border-radius: 20px; border: 1px solid #ffffff44;
+            display: inline-block;
+            margin-top: 18px;
+            background: #ffffff22;
+            color: #fff;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid #ffffff44;
         }
 
-        .lc-section { padding: 44px 40px; max-width: 860px; margin: 0 auto; }
+        .lc-section {
+            padding: 44px 40px;
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
         .lc-section h2 {
-            font-size: 1.5rem; font-weight: 700; color: #6200ea;
-            border-left: 4px solid #9c27b0; padding-left: 12px; margin: 0 0 20px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #6200ea;
+            border-left: 4px solid #9c27b0;
+            padding-left: 12px;
+            margin: 0 0 20px;
         }
-        .lc-section p { line-height: 1.7; font-size: 1rem; margin: 0 0 16px; }
 
-        .lc-features { list-style: none; padding: 0; margin: 0; }
+        .lc-section p {
+            line-height: 1.7;
+            font-size: 1rem;
+            margin: 0 0 16px;
+        }
+
+        .lc-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
         .lc-features li {
-            display: flex; align-items: flex-start; gap: 12px;
-            padding: 12px 0; font-size: 1rem; border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            font-size: 1rem;
+            border-bottom: 1px solid #f0f0f0;
         }
-        .lc-features li:last-child { border-bottom: none; }
+
+        .lc-features li:last-child {
+            border-bottom: none;
+        }
+
         .lc-check {
-            flex-shrink: 0; width: 22px; height: 22px;
+            flex-shrink: 0;
+            width: 22px;
+            height: 22px;
             background: linear-gradient(135deg, #6200ea, #9c27b0);
-            border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; margin-top: 2px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
         }
-        .lc-check::after { content: '✓'; color: white; font-size: 12px; font-weight: 700; }
 
-        .lc-steps { counter-reset: step; padding: 0; list-style: none; margin: 0; }
-        .lc-steps li { counter-increment: step; display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start; }
+        .lc-check::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .lc-steps {
+            counter-reset: step;
+            padding: 0;
+            list-style: none;
+            margin: 0;
+        }
+
+        .lc-steps li {
+            counter-increment: step;
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+
         .lc-steps li::before {
-            content: counter(step); flex-shrink: 0; width: 32px; height: 32px;
+            content: counter(step);
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
             background: linear-gradient(135deg, #6200ea, #9c27b0);
-            color: white; border-radius: 50%; display: flex;
-            align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
         }
-        .lc-steps li p { margin: 4px 0 0; font-size: 1rem; line-height: 1.6; }
-        .lc-steps li strong { display: block; font-size: 1rem; color: #6200ea; }
 
-        .lc-divider { border: none; border-top: 1px solid #eee; margin: 0 40px; }
+        .lc-steps li p {
+            margin: 4px 0 0;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .lc-steps li strong {
+            display: block;
+            font-size: 1rem;
+            color: #6200ea;
+        }
+
+        .lc-divider {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 0 40px;
+        }
 
         .lc-footer {
-            background: #f7f4ff; border-top: 3px solid #6200ea;
-            padding: 36px 40px; text-align: center;
+            background: #f7f4ff;
+            border-top: 3px solid #6200ea;
+            padding: 36px 40px;
+            text-align: center;
         }
-        .lc-footer h3 { font-size: 1.3rem; color: #6200ea; margin: 0 0 8px; }
-        .lc-footer p { color: #555; font-size: 0.95rem; margin: 0 0 18px; }
+
+        .lc-footer h3 {
+            font-size: 1.3rem;
+            color: #6200ea;
+            margin: 0 0 8px;
+        }
+
+        .lc-footer p {
+            color: #555;
+            font-size: 0.95rem;
+            margin: 0 0 18px;
+        }
+
         .lc-btn-outline {
-            display: inline-block; border: 2px solid #6200ea; color: #6200ea;
-            text-decoration: none; font-weight: 600; padding: 8px 26px;
-            border-radius: 4px; font-size: 0.95rem; margin: 4px;
+            display: inline-block;
+            border: 2px solid #6200ea;
+            color: #6200ea;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 8px 26px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            margin: 4px;
         }
     </style>
 </head>
+
 <body>
-<div style="text-align: center; margin: 0;">
-    <img src="banner.png" alt="Attendance Quick Link" style="width: 100%; max-width: 800px;"/>
-</div>
-<div class="lc-header">
-    <h1>Attendance Quick Link</h1>
-    <p>Fichaje por URL única por empleado, sin usuario ni contraseña</p>
-    <span class="lc-badge">Odoo 18 &amp; 19 · Community &amp; Enterprise</span>
-</div>
 
-<div class="lc-section">
-    <h2>Descripción</h2>
-    <p>
-        Genera una URL única e intransferible por empleado para que puedan registrar su entrada y salida
-        desde cualquier dispositivo — móvil, tablet u ordenador — sin necesidad de usuario, contraseña
-        ni acceso al backend de Odoo.
-    </p>
-    <p>
-        La URL puede guardarse en la pantalla de inicio del móvil como una aplicación (PWA), convirtiéndose
-        en un botón de fichaje instantáneo. Ideal para empresas con empleados en remoto, en campo o
-        sin acceso habitual al sistema.
-    </p>
-</div>
+    <div class="lc-header">
+        <h1>Attendance Quick Link</h1>
+        <p>Fichaje por URL única por empleado, sin usuario ni contraseña</p>
+        <span class="lc-badge">Odoo 18 &amp; 19 · Community &amp; Enterprise</span>
+    </div>
 
-<hr class="lc-divider"/>
+    <div class="lc-section">
+        <h2>Descripción</h2>
+        <p>
+            Genera una URL única e intransferible por empleado para que puedan registrar su entrada y salida
+            desde cualquier dispositivo — móvil, tablet u ordenador — sin necesidad de usuario, contraseña
+            ni acceso al backend de Odoo.
+        </p>
+        <p>
+            La URL puede guardarse en la pantalla de inicio del móvil como una aplicación (PWA), convirtiéndose
+            en un botón de fichaje instantáneo. Ideal para empresas con empleados en remoto, en campo o
+            sin acceso habitual al sistema.
+        </p>
+    </div>
 
-<div class="lc-section">
-    <h2>Funcionalidades</h2>
-    <ul class="lc-features">
-        <li>
-            <span class="lc-check"></span>
-            <span><strong>URL única por empleado</strong> — cada empleado tiene su propio enlace de fichaje, regenerable en cualquier momento desde su ficha.</span>
-        </li>
-        <li>
-            <span class="lc-check"></span>
-            <span><strong>Captura de IP y geolocalización</strong> — registra la dirección IP y las coordenadas GPS del dispositivo en cada fichaje, permitiendo detectar si el empleado ficha desde su domicilio u otro lugar.</span>
-        </li>
-        <li>
-            <span class="lc-check"></span>
-            <span><strong>Calendario mensual de asistencias</strong> — el empleado ve sus horas fichadas por día y sus ausencias aprobadas, pendientes o en segunda aprobación, directamente en su página de fichaje.</span>
-        </li>
-        <li>
-            <span class="lc-check"></span>
-            <span><strong>Solicitud de corrección de fichaje</strong> — el empleado puede solicitar la corrección de un fichaje incorrecto. Se envía automáticamente un correo al responsable con los datos de la corrección solicitada, cumpliendo la legislación laboral española.</span>
-        </li>
-        <li>
-            <span class="lc-check"></span>
-            <span><strong>Solicitud de ausencias desde el portal</strong> — el empleado puede solicitar vacaciones, permisos u otros tipos de ausencia directamente desde su página de fichaje, con soporte para ausencias por horas.</span>
-        </li>
-        <li>
-            <span class="lc-check"></span>
-            <span><strong>Informe diario de incidencias en Excel</strong> — un cron nocturno genera automáticamente un Excel con todos los empleados que han fichado fuera del margen de tolerancia configurado y lo envía por correo al responsable.</span>
-        </li>
-        <li>
-            <span class="lc-check"></span>
-            <span><strong>Generación de informes bajo demanda</strong> — desde el menú de Informes de Asistencias, un wizard permite seleccionar cualquier fecha y descargar el informe Excel al momento.</span>
-        </li>
-        <li>
-            <span class="lc-check"></span>
-            <span><strong>Instalable como PWA</strong> — el empleado puede añadir la URL a su pantalla de inicio y usarla como una app nativa sin instalación.</span>
-        </li>
-        <li>
-            <span class="lc-check"></span>
-            <span><strong>Configurable por tipo de ausencia</strong> — cada tipo de ausencia puede marcarse para mostrarse siempre en el portal o para ocultarse, independientemente del saldo disponible.</span>
-        </li>
-        <li>
-            <span class="lc-check"></span>
-            <span><strong>Ajustes integrados en Odoo</strong> — el correo de informes, el margen de tolerancia y el correo de correcciones se configuran desde Ajustes → Asistencias, sin tocar parámetros técnicos.</span>
-        </li>
-    </ul>
-</div>
+    <hr class="lc-divider" />
 
-<hr class="lc-divider"/>
+    <div class="lc-section">
+        <h2>Funcionalidades</h2>
+        <ul class="lc-features">
+            <li>
+                <span class="lc-check"></span>
+                <span><strong>URL única por empleado</strong> — cada empleado tiene su propio enlace de fichaje,
+                    regenerable en cualquier momento desde su ficha.</span>
+            </li>
+            <li>
+                <span class="lc-check"></span>
+                <span><strong>Captura de IP y geolocalización</strong> — registra la dirección IP y las coordenadas GPS
+                    del dispositivo en cada fichaje, permitiendo detectar si el empleado ficha desde su domicilio u otro
+                    lugar.</span>
+            </li>
+            <li>
+                <span class="lc-check"></span>
+                <span><strong>Calendario mensual de asistencias</strong> — el empleado ve sus horas fichadas por día y
+                    sus ausencias aprobadas, pendientes o en segunda aprobación, directamente en su página de
+                    fichaje.</span>
+            </li>
+            <li>
+                <span class="lc-check"></span>
+                <span><strong>Solicitud de corrección de fichaje</strong> — el empleado puede solicitar la corrección de
+                    un fichaje incorrecto. Se envía automáticamente un correo al responsable con los datos de la
+                    corrección solicitada, cumpliendo la legislación laboral española.</span>
+            </li>
+            <li>
+                <span class="lc-check"></span>
+                <span><strong>Solicitud de ausencias desde el portal</strong> — el empleado puede solicitar vacaciones,
+                    permisos u otros tipos de ausencia directamente desde su página de fichaje, con soporte para
+                    ausencias por horas.</span>
+            </li>
+            <li>
+                <span class="lc-check"></span>
+                <span><strong>Informe diario de incidencias en Excel</strong> — un cron nocturno genera automáticamente
+                    un Excel con todos los empleados que han fichado fuera del margen de tolerancia configurado y lo
+                    envía por correo al responsable.</span>
+            </li>
+            <li>
+                <span class="lc-check"></span>
+                <span><strong>Generación de informes bajo demanda</strong> — desde el menú de Informes de Asistencias,
+                    un wizard permite seleccionar cualquier fecha y descargar el informe Excel al momento.</span>
+            </li>
+            <li>
+                <span class="lc-check"></span>
+                <span><strong>Instalable como PWA</strong> — el empleado puede añadir la URL a su pantalla de inicio y
+                    usarla como una app nativa sin instalación.</span>
+            </li>
+            <li>
+                <span class="lc-check"></span>
+                <span><strong>Configurable por tipo de ausencia</strong> — cada tipo de ausencia puede marcarse para
+                    mostrarse siempre en el portal o para ocultarse, independientemente del saldo disponible.</span>
+            </li>
+            <li>
+                <span class="lc-check"></span>
+                <span><strong>Ajustes integrados en Odoo</strong> — el correo de informes, el margen de tolerancia y el
+                    correo de correcciones se configuran desde Ajustes → Asistencias, sin tocar parámetros
+                    técnicos.</span>
+            </li>
+        </ul>
+    </div>
 
-<div class="lc-section">
-    <h2>Cómo empezar</h2>
-    <ol class="lc-steps">
-        <li>
-            <div>
-                <strong>Instalar el módulo</strong>
-                <p>Instala <em>Attendance Quick Link</em> desde el menú de Aplicaciones. Se generarán automáticamente los tokens de fichaje para todos los empleados existentes.</p>
-            </div>
-        </li>
-        <li>
-            <div>
-                <strong>Compartir la URL con cada empleado</strong>
-                <p>Abre la ficha del empleado. En la sección <em>Fichaje rápido</em> encontrarás la URL única. Cópiala y envíasela al empleado por email o WhatsApp.</p>
-            </div>
-        </li>
-        <li>
-            <div>
-                <strong>Configurar los correos de notificación</strong>
-                <p>Ve a <em>Ajustes → Asistencias</em> e introduce el email destino para el informe diario, el margen de tolerancia en minutos y el email para las solicitudes de corrección.</p>
-            </div>
-        </li>
-        <li>
-            <div>
-                <strong>El empleado guarda la URL en su móvil</strong>
-                <p>Desde el navegador del móvil, el empleado puede añadir la página a su pantalla de inicio como una app (PWA) y fichar con un solo toque.</p>
-            </div>
-        </li>
-    </ol>
-</div>
+    <hr class="lc-divider" />
 
-<hr class="lc-divider"/>
+    <div class="lc-section">
+        <h2>Cómo empezar</h2>
+        <ol class="lc-steps">
+            <li>
+                <div>
+                    <strong>Instalar el módulo</strong>
+                    <p>Instala <em>Attendance Quick Link</em> desde el menú de Aplicaciones. Se generarán
+                        automáticamente los tokens de fichaje para todos los empleados existentes.</p>
+                </div>
+            </li>
+            <li>
+                <div>
+                    <strong>Compartir la URL con cada empleado</strong>
+                    <p>Abre la ficha del empleado. En la sección <em>Fichaje rápido</em> encontrarás la URL única.
+                        Cópiala y envíasela al empleado por email o WhatsApp.</p>
+                </div>
+            </li>
+            <li>
+                <div>
+                    <strong>Configurar los correos de notificación</strong>
+                    <p>Ve a <em>Ajustes → Asistencias</em> e introduce el email destino para el informe diario, el
+                        margen de tolerancia en minutos y el email para las solicitudes de corrección.</p>
+                </div>
+            </li>
+            <li>
+                <div>
+                    <strong>El empleado guarda la URL en su móvil</strong>
+                    <p>Desde el navegador del móvil, el empleado puede añadir la página a su pantalla de inicio como una
+                        app (PWA) y fichar con un solo toque.</p>
+                </div>
+            </li>
+        </ol>
+    </div>
 
-<div class="lc-section">
-    <h2>Notas técnicas</h2>
-    <p>
-        Compatible con <strong>Odoo 18 y 19</strong>, ediciones Community y Enterprise.
-        Requiere los módulos <code>hr_attendance</code>, <code>hr_holidays</code> y <code>mail</code>.
-        No modifica ningún dato nativo — todos los cambios son aditivos.
-    </p>
-    <p>
-        Los tokens de fichaje son hashes UUID aleatorios. Cada token puede regenerarse individualmente
-        o para todos los empleados a la vez desde la ficha del empleado. Los tokens existentes no se
-        modifican al actualizar el módulo.
-    </p>
-</div>
+    <hr class="lc-divider" />
 
-<div class="lc-footer">
-    <h3>Desarrollado por Lógica Consultores 360</h3>
-    <p>Partner de Odoo · Desarrollo a medida · Migraciones · Soporte</p>
-    <span style="color:#555;font-size:0.95rem;display:inline-block;margin:4px 8px;">www.logicaconsultores.com</span>
-    <a class="lc-btn-outline" href="mailto:info@logicaconsultores.com">info@logicaconsultores.com</a>
-</div>
+    <div class="lc-section">
+        <h2>Notas técnicas</h2>
+        <p>
+            Compatible con <strong>Odoo 18 y 19</strong>, ediciones Community y Enterprise.
+            Requiere los módulos <code>hr_attendance</code>, <code>hr_holidays</code> y <code>mail</code>.
+            No modifica ningún dato nativo — todos los cambios son aditivos.
+        </p>
+        <p>
+            Los tokens de fichaje son hashes UUID aleatorios. Cada token puede regenerarse individualmente
+            o para todos los empleados a la vez desde la ficha del empleado. Los tokens existentes no se
+            modifican al actualizar el módulo.
+        </p>
+    </div>
+
+    <div class="lc-footer">
+        <h3>Desarrollado por Lógica Consultores 360</h3>
+        <p>Partner de Odoo · Desarrollo a medida · Migraciones · Soporte</p>
+        <span style="color:#555;font-size:0.95rem;display:inline-block;margin:4px 8px;">www.logicaconsultores.com</span>
+        <a class="lc-btn-outline" href="mailto:info@logicaconsultores.com">info@logicaconsultores.com</a>
+    </div>
 
 </body>
+
 </html>
