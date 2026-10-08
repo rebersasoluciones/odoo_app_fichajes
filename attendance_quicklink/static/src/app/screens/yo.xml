@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="attendance_quicklink.YoScreen">
+        <div class="qf-screen">
+            <header class="qf-topbar">
+                <h1 class="qf-title">Yo</h1>
+            </header>
+
+            <section class="qf-card qf-profile">
+                <span class="qf-avatar" t-esc="employee.initials"/>
+                <div class="qf-profile-text">
+                    <div class="qf-profile-name" t-esc="employee.name"/>
+                    <div class="qf-dim qf-small" t-esc="subtitle"/>
+                </div>
+            </section>
+
+            <section class="qf-card qf-list-card">
+                <div class="qf-kv">
+                    <span class="qf-dim">Jornada semanal</span>
+                    <span class="qf-num" t-esc="weeklyHours"/>
+                </div>
+                <div class="qf-kv" t-if="props.home.calendar.name">
+                    <span class="qf-dim">Horario</span>
+                    <span t-esc="props.home.calendar.name"/>
+                </div>
+                <div class="qf-kv" t-if="props.home.show_overtime">
+                    <span class="qf-dim">Saldo de horas</span>
+                    <span class="qf-num qf-strong" t-att-class="props.home.overtime_minutes &lt; 0 ? 'qf-stop-text' : 'qf-acc-text'" t-esc="overtimeText"/>
+                </div>
+            </section>
+
+            <section class="qf-card" t-if="balances.length">
+                <div class="qf-card-title qf-mb">Mis días</div>
+                <div class="qf-meter" t-foreach="balances" t-as="balance" t-key="balance.id">
+                    <div class="qf-meter-head">
+                        <span class="qf-dim" t-esc="balance.name"/>
+                        <span class="qf-num qf-strong" t-esc="balance.text"/>
+                    </div>
+                    <div class="qf-meter-track">
+                        <div class="qf-meter-fill" t-att-class="{ 'is-alt': balance_index % 2 === 1 }" t-att-style="'width: ' + balance.percent + '%'"/>
+                    </div>
+                </div>
+            </section>
+
+            <section class="qf-card qf-list-card">
+                <div class="qf-kv qf-kv-tall">
+                    <span class="qf-strong">Apariencia</span>
+                    <div class="qf-seg qf-seg-small">
+                        <t t-foreach="modes" t-as="mode" t-key="mode.key">
+                            <button type="button" class="qf-seg-btn" t-att-class="{ 'is-on': props.theme === mode.key }" t-att-aria-pressed="props.theme === mode.key ? 'true' : 'false'" t-on-click="() => props.onSetTheme(mode.key)" t-esc="mode.label"/>
+                        </t>
+                    </div>
+                </div>
+                <div class="qf-kv qf-kv-tall">
+                    <Icon name="'phone'" size="20"/>
+                    <div class="qf-kv-text">
+                        <div class="qf-strong">Instalar como app</div>
+                        <div class="qf-dim qf-small" t-esc="installText"/>
+                    </div>
+                    <button type="button" class="qf-chipbtn" t-if="pwa.prompt" t-on-click="() => this.install()">Instalar</button>
+                </div>
+                <div class="qf-kv qf-kv-tall">
+                    <Icon name="'pin'" size="20"/>
+                    <div class="qf-kv-text">
+                        <div class="qf-strong">Ubicación al fichar</div>
+                    </div>
+                    <span class="qf-tag" t-att-class="locationTag.cls" t-esc="locationTag.label"/>
+                </div>
+            </section>
+
+            <div class="qf-footnote">
+                <Icon name="'lock'" size="16"/>
+                <span>Este enlace es solo tuyo. Si lo pierdes o crees que alguien lo tiene, pide uno nuevo a RRHH.</span>
+            </div>
+        </div>
+    </t>
+</templates>

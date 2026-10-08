@@ -1,0 +1,68 @@
+@mixin qf-theme-light {
+    --qf-bg: #F3F1EC;
+    --qf-s1: #FFFFFF;
+    --qf-s2: #F6F4EF;
+    --qf-track: #ECE8E0;
+    --qf-line: #E4E0D7;
+    --qf-ink: #15171C;
+    --qf-dim: #5C636E;
+    --qf-faint: #A3A8B0;
+    --qf-acc: #C8F169;
+    --qf-acc-ink: #14180A;
+    --qf-acc-text: #4A6E00;
+    --qf-acc-line: #7DB314;
+    --qf-acc-soft: rgba(125, 179, 20, 0.14);
+    --qf-stop: #C23A26;
+    --qf-stop-ink: #FFFFFF;
+    --qf-stop-text: #B5341F;
+    --qf-stop-soft: rgba(194, 58, 38, 0.1);
+    --qf-warn: #D79A1E;
+    --qf-warn-text: #8A5A00;
+    --qf-warn-soft: rgba(215, 154, 30, 0.16);
+    --qf-sky: #2F6BD0;
+    --qf-sky-text: #2559B3;
+    --qf-sky-soft: rgba(47, 107, 208, 0.11);
+    --qf-bar-past: #D3CDC1;
+    --qf-scrim: rgba(21, 23, 28, 0.36);
+    --qf-thumb: #FFFFFF;
+    --qf-shadow: 0 1px 2px rgba(21, 23, 28, 0.05), 0 6px 20px rgba(21, 23, 28, 0.05);
+    --qf-toast-bg: #15171C;
+    --qf-toast-ink: #F3F1EC;
+    color-scheme: light;
+}
+
+@mixin qf-theme-dark {
+    --qf-bg: #0D1015;
+    --qf-s1: #161A21;
+    --qf-s2: #1D222B;
+    --qf-track: #232934;
+    --qf-line: #272E39;
+    --qf-ink: #EEF0F3;
+    --qf-dim: #9AA3B1;
+    --qf-faint: #5F6876;
+    --qf-acc: #C8F169;
+    --qf-acc-ink: #14180A;
+    --qf-acc-text: #C8F169;
+    --qf-acc-line: #C8F169;
+    --qf-acc-soft: rgba(200, 241, 105, 0.13);
+    --qf-stop: #FF7A66;
+    --qf-stop-ink: #1C0C08;
+    --qf-stop-text: #FF8F7D;
+    --qf-stop-soft: rgba(255, 122, 102, 0.13);
+    --qf-warn: #F6C453;
+    --qf-warn-text: #F6C453;
+    --qf-warn-soft: rgba(246, 196, 83, 0.13);
+    --qf-sky: #7DB9FF;
+    --qf-sky-text: #8EC3FF;
+    --qf-sky-soft: rgba(125, 185, 255, 0.14);
+    --qf-bar-past: #3A4250;
+    --qf-scrim: rgba(3, 5, 8, 0.6);
+    --qf-thumb: #323946;
+    --qf-shadow: none;
+    --qf-toast-bg: #EEF0F3;
+    --qf-toast-ink: #0D1015;
+    color-scheme: dark;
+}
+
+$qf-font: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+$qf-display: 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif;

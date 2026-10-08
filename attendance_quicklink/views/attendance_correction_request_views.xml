@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="attendance_correction_request_view_list" model="ir.ui.view">
+        <field name="name">attendance.correction.request.list</field>
+        <field name="model">attendance.correction.request</field>
+        <field name="arch" type="xml">
+            <list string="Solicitudes de corrección" create="0" decoration-muted="state == 'rejected'">
+                <field name="create_date" string="Enviada" widget="datetime"/>
+                <field name="employee_id" widget="many2one_avatar_employee"/>
+                <field name="date"/>
+                <field name="kind"/>
+                <field name="original_text"/>
+                <field name="requested_text"/>
+                <field name="delta_text" optional="show"/>
+                <field name="reason" optional="hide"/>
+                <field name="state" widget="badge"
+                    decoration-warning="state == 'pending'"
+                    decoration-success="state == 'approved'"
+                    decoration-danger="state == 'rejected'"/>
+                <field name="resolved_by_id" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="attendance_correction_request_view_form" model="ir.ui.view">
+        <field name="name">attendance.correction.request.form</field>
+        <field name="model">attendance.correction.request</field>
+        <field name="arch" type="xml">
+            <form string="Solicitud de corrección" create="0" duplicate="0">
+                <header>
+                    <field name="can_resolve" invisible="1"/>
+                    <button name="action_approve" type="object" string="Aprobar" class="btn-primary"
+                        invisible="not can_resolve"
+                        confirm="Se modificará el fichaje del empleado y quedará registrado en su historial. ¿Aprobar la solicitud?"/>
+                    <button name="action_reject" type="object" string="Rechazar"
+                        invisible="not can_resolve"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,approved,rejected"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="employee_id" widget="many2one_avatar_employee" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Solicitud">
+                            <field name="kind" readonly="1"/>
+                            <field name="date" readonly="1"/>
+                            <field name="attendance_id" readonly="1" invisible="not attendance_id"/>
+                            <field name="reason" readonly="1"/>
+                        </group>
+                        <group string="Horas">
+                            <field name="original_text"/>
+                            <field name="requested_text"/>
+                            <field name="delta_text"/>
+                            <field name="day_total_text"/>
+                        </group>
+                    </group>
+                    <group string="Resolución">
+                        <field name="rejection_reason" readonly="state != 'pending'"
+                            invisible="state == 'approved'"
+                            placeholder="Necesario para rechazar"/>
+                        <field name="resolved_by_id" invisible="state == 'pending'"/>
+                        <field name="resolved_date" invisible="state == 'pending'"/>
+                    </group>
+                    <group string="Fichajes de ese día">
+                        <field name="day_attendance_ids" nolabel="1" colspan="2" readonly="1">
+                            <list>
+                                <field name="check_in"/>
+                                <field name="check_out"/>
+                                <field name="worked_hours" widget="float_time"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="attendance_correction_request_view_search" model="ir.ui.view">
+        <field name="name">attendance.correction.request.search</field>
+        <field name="model">attendance.correction.request</field>
+        <field name="arch" type="xml">
+            <search string="Solicitudes de corrección">
+                <field name="employee_id"/>
+                <field name="department_id" operator="child_of"/>
+                <filter string="Pendientes" name="pending" domain="[('state', '=', 'pending')]"/>
+                <filter string="Aprobadas" name="approved" domain="[('state', '=', 'approved')]"/>
+                <filter string="Rechazadas" name="rejected" domain="[('state', '=', 'rejected')]"/>
+                <separator/>
+                <filter string="Empleados que apruebo" name="my_employees" domain="[('employee_id.attendance_manager_id', '=', uid)]"/>
+                <separator/>
+                <filter string="Día" name="filter_date" date="date"/>
+                <group>
+                    <filter string="Empleado" name="group_employee" context="{'group_by': 'employee_id'}"/>
+                    <filter string="Estado" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Mes" name="group_month" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_attendance_correction_request" model="ir.actions.act_window">
+        <field name="name">Correcciones de fichaje</field>
+        <field name="path">attendance-corrections</field>
+        <field name="res_model">attendance.correction.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="attendance_correction_request_view_search"/>
+        <field name="context">{'search_default_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay solicitudes de corrección
+            </p>
+            <p>
+                Cuando un empleado pida corregir un fichaje desde su enlace personal, aparecerá aquí y se avisará por correo a su responsable de asistencias.
+            </p>
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_attendance_correction_request"
+        name="Correcciones"
+        parent="hr_attendance.menu_hr_attendance_root"
+        action="action_attendance_correction_request"
+        sequence="7"
+        groups="hr_attendance.group_hr_attendance_officer"/>
+</odoo>
