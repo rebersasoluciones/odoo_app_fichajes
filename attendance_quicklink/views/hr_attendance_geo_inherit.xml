@@ -9,6 +9,15 @@
                 <field name="in_ip_address" string="IP Entrada" optional="show"/>
                 <field name="out_ip_address" string="IP Salida" optional="hidden"/>
             </field>
+            <field name="in_location" position="attributes">
+                <attribute name="optional">show</attribute>
+            </field>
+            <field name="in_latitude" position="attributes">
+                <attribute name="optional">show</attribute>
+            </field>
+            <field name="in_longitude" position="attributes">
+                <attribute name="optional">show</attribute>
+            </field>
         </field>
     </record>
 
@@ -23,12 +32,30 @@
             <field name="in_browser" position="attributes">
                 <attribute name="invisible">False</attribute>
             </field>
+            <xpath expr="//field[@name='in_latitude']/ancestor::group[1]" position="attributes">
+                <attribute name="invisible">not in_location and not in_latitude and not in_longitude</attribute>
+            </xpath>
+            <xpath expr="//label[@for='in_latitude']" position="attributes">
+                <attribute name="invisible">not in_latitude and not in_longitude</attribute>
+            </xpath>
+            <xpath expr="//field[@name='in_latitude']/ancestor::div[2]" position="attributes">
+                <attribute name="invisible">not in_latitude and not in_longitude</attribute>
+            </xpath>
             <field name="out_ip_address" position="attributes">
                 <attribute name="invisible">False</attribute>
             </field>
             <field name="out_browser" position="attributes">
                 <attribute name="invisible">False</attribute>
             </field>
+            <xpath expr="//field[@name='out_latitude']/ancestor::group[1]" position="attributes">
+                <attribute name="invisible">not out_location and not out_latitude and not out_longitude</attribute>
+            </xpath>
+            <xpath expr="//label[@for='out_latitude']" position="attributes">
+                <attribute name="invisible">not out_latitude and not out_longitude</attribute>
+            </xpath>
+            <xpath expr="//field[@name='out_latitude']/ancestor::div[2]" position="attributes">
+                <attribute name="invisible">not out_latitude and not out_longitude</attribute>
+            </xpath>
         </field>
     </record>
 </odoo>

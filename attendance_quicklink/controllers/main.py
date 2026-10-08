@@ -1,5 +1,7 @@
 import json
 
+from requests.exceptions import RequestException
+
 from odoo import _, http
 from odoo.exceptions import AccessError, MissingError, UserError, ValidationError
 from odoo.http import request
@@ -22,10 +24,17 @@ class AttendanceQuicklink(http.Controller):
 
     def _origin(self):
         httprequest = request.httprequest
+        forwarded_for = httprequest.environ.get('HTTP_X_FORWARDED_FOR', '')
         return {
-            'ip_address': httprequest.remote_addr,
+            'ip_address': forwarded_for.split(',')[0].strip() if forwarded_for else httprequest.remote_addr,
             'browser': (httprequest.headers.get('User-Agent') or '')[:255],
         }
+
+    def _location(self, latitude, longitude):
+        try:
+            return request.env['base.geocoder'].sudo()._get_localisation(latitude, longitude)
+        except (UserError, RequestException):
+            return _('Desconocida')
 
     def _run(self, token, callback):
         employee = self._employee(token)
@@ -56,6 +65,7 @@ class AttendanceQuicklink(http.Controller):
     @http.route('/fichaje/<string:token>/api/fichar', type='jsonrpc', auth='public')
     def api_toggle(self, token, latitude=None, longitude=None, **kwargs):
         origin = self._origin()
+        latitude, longitude = request.env['hr.employee']._quicklink_coords(latitude, longitude)
 
         def toggle(employee):
             employee._quicklink_toggle_attendance(
@@ -63,6 +73,7 @@ class AttendanceQuicklink(http.Controller):
                 longitude=longitude,
                 ip_address=origin['ip_address'],
                 browser=origin['browser'],
+                location=self._location(latitude, longitude),
             )
             return employee._quicklink_home_data()
 

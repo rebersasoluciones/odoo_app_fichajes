@@ -1,6 +1,6 @@
 {
     'name': 'Attendance Quick Link',
-    'version': '19.0.2.0.0',
+    'version': '19.0.2.1.0',
     'author': 'Lógica Consultores 360',
     'website': 'https://www.logicaconsultores.com',
     'summary': 'App de fichaje por enlace personal: fichar, calendario, ausencias y correcciones con aprobación de RRHH',

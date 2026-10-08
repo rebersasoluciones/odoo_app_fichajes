@@ -186,6 +186,41 @@ class TestQuicklink(QuicklinkCommon):
         requests = self.employee._quicklink_requests_data()
         self.assertEqual(requests['leaves'][0]['state'], 'pending')
 
+    def test_leave_type_visibility_flags(self):
+        def visible_ids():
+            return [leave_type['id'] for leave_type in self.employee._quicklink_leave_types()]
+
+        with_allocation = self.env['hr.leave.type'].create({
+            'name': 'Vacaciones QL',
+            'requires_allocation': True,
+            'request_unit': 'day',
+        })
+        other_company = self.env['res.company'].create({'name': 'Otra empresa QL'})
+        foreign = self.env['hr.leave.type'].create({
+            'name': 'Ajeno QL',
+            'requires_allocation': False,
+            'company_id': other_company.id,
+            'quicklink_always_show': True,
+        })
+        self.assertNotIn(with_allocation.id, visible_ids())
+        with_allocation.quicklink_always_show = True
+        self.assertIn(with_allocation.id, visible_ids())
+        with_allocation.quicklink_hide = True
+        self.assertNotIn(with_allocation.id, visible_ids())
+        self.assertNotIn(foreign.id, visible_ids())
+
+    def test_toggle_stores_location(self):
+        self.employee._quicklink_toggle_attendance(
+            latitude='40.4168', longitude='-3.7038', ip_address='10.0.0.2', browser='Test', location='Madrid, España',
+        )
+        attendance = self.employee.last_attendance_id
+        self.assertEqual(attendance.in_location, 'Madrid, España')
+        self.assertAlmostEqual(attendance.in_latitude, 40.4168)
+        self.assertAlmostEqual(attendance.in_longitude, -3.7038)
+        self.employee._quicklink_toggle_attendance(latitude='999', longitude='-3.7')
+        self.assertFalse(attendance.out_latitude)
+        self.assertTrue(attendance.check_out)
+
 
 @tagged('post_install', '-at_install')
 class TestQuicklinkHttp(HttpCase):
@@ -226,6 +261,18 @@ class TestQuicklinkHttp(HttpCase):
 
         manifest = self.url_open(f'/fichaje/{self.token}/manifest.json')
         self.assertEqual(manifest.json()['start_url'], f'/fichaje/{self.token}')
+
+    def test_toggle_records_origin_and_location(self):
+        result = self.make_jsonrpc_request(
+            f'/fichaje/{self.token}/api/fichar',
+            {'latitude': 37.3891, 'longitude': -5.9845},
+            headers={'X-Forwarded-For': '203.0.113.7, 10.0.0.1'},
+        )
+        self.assertTrue(result['result']['checked_in'])
+        attendance = self.employee.last_attendance_id
+        self.assertEqual(attendance.in_ip_address, '203.0.113.7')
+        self.assertAlmostEqual(attendance.in_latitude, 37.3891)
+        self.assertTrue(attendance.in_location)
 
     def test_review_page_and_approval(self):
         employee = self.employee

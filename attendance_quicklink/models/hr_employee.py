@@ -269,11 +269,11 @@ class HrEmployee(models.Model):
             default_employee_id=emp.id,
         ).search([
             ('quicklink_hide', '=', False),
-            '|',
+            *emp._quicklink_leave_type_company_domain(),
+            '|', '|',
                 ('quicklink_always_show', '=', True),
-                '&',
-                    *emp._quicklink_leave_type_company_domain(),
-                    '|', ('requires_allocation', '=', False), ('has_valid_allocation', '=', True),
+                ('requires_allocation', '=', False),
+                ('has_valid_allocation', '=', True),
         ])
         return [{
             'id': leave_type.id,
@@ -373,18 +373,27 @@ class HrEmployee(models.Model):
             'balances': emp._quicklink_balances(),
         }
 
-    def _quicklink_toggle_attendance(self, latitude=None, longitude=None, ip_address=None, browser=None):
+    @api.model
+    def _quicklink_coords(self, latitude, longitude):
+        try:
+            lat = float(latitude)
+            lon = float(longitude)
+        except (TypeError, ValueError):
+            return False, False
+        if not (lat and lon) or not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            return False, False
+        return lat, lon
+
+    def _quicklink_toggle_attendance(self, latitude=None, longitude=None, ip_address=None, browser=None, location=None):
         self.ensure_one()
         geo_information = {
             'mode': 'manual',
             'ip_address': ip_address or False,
             'browser': (browser or '')[:255] or False,
         }
-        try:
-            lat = float(latitude)
-            lon = float(longitude)
-        except (TypeError, ValueError):
-            lat = lon = 0.0
+        if location:
+            geo_information['location'] = location
+        lat, lon = self._quicklink_coords(latitude, longitude)
         if lat and lon:
             geo_information.update(latitude=lat, longitude=lon)
         return self.sudo()._attendance_action_change(geo_information=geo_information)
