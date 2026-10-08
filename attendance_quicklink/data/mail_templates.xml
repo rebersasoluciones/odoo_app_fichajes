@@ -1,118 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="mail_template_correction_request" model="mail.template">
-        <field name="name">Fichajes: solicitud de corrección para RRHH</field>
-        <field name="model_id" ref="attendance_quicklink.model_attendance_correction_request"/>
-        <field name="subject">Corrección de fichaje · {{ object.employee_id.name }} · {{ format_date(object.date) }}</field>
-        <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
-        <field name="use_default_to" eval="False"/>
-        <field name="email_to">{{ object.approver_emails }}</field>
-        <field name="lang">{{ object.employee_id.attendance_manager_id.lang or object.company_id.partner_id.lang }}</field>
-        <field name="auto_delete" eval="True"/>
-        <field name="body_html" type="html">
-<table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#F3F1EC; padding:28px 0; font-family:Figtree, Arial, Helvetica, sans-serif; color:#15171C;">
-    <tr>
-        <td align="center">
-            <table border="0" cellpadding="0" cellspacing="0" width="600" style="width:600px; max-width:600px;">
-                <tr>
-                    <td style="padding:0 8px 16px 8px; font-size:16px; font-weight:700;">
-                        <span style="display:inline-block; width:12px; height:12px; border-radius:6px; background-color:#C8F169; border:2px solid #7DB314; vertical-align:middle;"></span>
-                        <span style="vertical-align:middle; padding-left:6px;">Fichajes</span>
-                        <span style="vertical-align:middle; color:#5C636E; font-weight:400;"> · <t t-out="object.company_id.name or ''"/></span>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="background-color:#FFFFFF; border:1px solid #E4E0D7; border-radius:24px; padding:30px 32px;">
-                        <div style="font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#5C636E;">
-                            Solicitud de corrección
-                            <span style="display:inline-block; margin-left:8px; padding:3px 10px; border-radius:999px; background-color:#FBEFD5; color:#8A5A00; letter-spacing:0; text-transform:none;">
-                                <t t-if="object.state == 'pending'">Pendiente</t>
-                                <t t-elif="object.state == 'approved'">Aprobada</t>
-                                <t t-else="">Rechazada</t>
-                            </span>
-                        </div>
-                        <h1 style="margin:14px 0 18px 0; font-size:26px; line-height:1.25; font-weight:700; color:#15171C;">
-                            <t t-out="object.employee_id.name"/>
-                            <t t-if="object.kind == 'fix'">pide corregir su fichaje del</t>
-                            <t t-else="">pide añadir un tramo que olvidó fichar el</t>
-                            <t t-out="format_date(object.date, date_format='EEEE d MMMM')"/>
-                        </h1>
-                        <div style="font-size:14px; color:#5C636E; margin-bottom:20px;">
-                            <t t-out="object.employee_id.job_title or object.employee_id.job_id.name or ''"/>
-                            <t t-if="object.employee_id.department_id"> · <t t-out="object.employee_id.department_id.name"/></t>
-                        </div>
-                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                            <tr>
-                                <td width="50%" valign="top" style="padding-right:6px;">
-                                    <div style="border:1px solid #E4E0D7; border-radius:18px; padding:16px 18px; background-color:#F6F4EF;">
-                                        <div style="font-size:12.5px; font-weight:600; color:#5C636E;">Registrado</div>
-                                        <div style="font-size:24px; font-weight:700; margin-top:6px; color:#5C636E;"><t t-out="object.original_text"/></div>
-                                        <div style="font-size:13px; color:#5C636E; margin-top:4px;"><t t-out="object.original_duration_text or ' '"/></div>
-                                    </div>
-                                </td>
-                                <td width="50%" valign="top" style="padding-left:6px;">
-                                    <div style="border:2px solid #7DB314; border-radius:18px; padding:15px 17px; background-color:#F4F9E8;">
-                                        <div style="font-size:12.5px; font-weight:600; color:#4A6E00;">Solicitado</div>
-                                        <div style="font-size:24px; font-weight:700; margin-top:6px; color:#15171C;"><t t-out="object.requested_text"/></div>
-                                        <div style="font-size:13px; color:#4A6E00; margin-top:4px; font-weight:600;"><t t-out="object.requested_duration_text"/> · <t t-out="object.delta_text"/></div>
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
-                        <div style="border-radius:18px; padding:16px 18px; background-color:#F6F4EF; margin-top:16px;">
-                            <div style="font-size:12.5px; font-weight:600; color:#5C636E;">Motivo</div>
-                            <div style="font-size:15px; line-height:1.5; margin-top:6px; white-space:pre-line;"><t t-out="object.reason"/></div>
-                        </div>
-                        <div style="margin-top:18px;">
-                            <div style="font-size:12.5px; font-weight:600; color:#5C636E; margin-bottom:4px;">Ese día</div>
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size:14px;">
-                                <t t-foreach="object.day_attendance_ids" t-as="att">
-                                    <tr>
-                                        <td style="padding:9px 0; border-bottom:1px solid #E4E0D7; font-weight:600;">
-                                            <t t-out="format_datetime(att.check_in, tz=object.employee_tz, dt_format='HH:mm')"/> →
-                                            <t t-if="att.check_out"><t t-out="format_datetime(att.check_out, tz=object.employee_tz, dt_format='HH:mm')"/></t>
-                                            <t t-else="">sin salida</t>
-                                        </td>
-                                        <td align="right" style="padding:9px 0; border-bottom:1px solid #E4E0D7; color:#5C636E;">
-                                            <t t-if="att == object.attendance_id">el que se corrige</t>
-                                        </td>
-                                    </tr>
-                                </t>
-                                <tr t-if="not object.day_attendance_ids">
-                                    <td colspan="2" style="padding:9px 0; border-bottom:1px solid #E4E0D7; color:#5C636E;">Sin fichajes ese día</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding:9px 0; color:#5C636E;">Total del día</td>
-                                    <td align="right" style="padding:9px 0; font-weight:700;"><t t-out="object.day_total_text"/></td>
-                                </tr>
-                            </table>
-                        </div>
-                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top:22px;">
-                            <tr>
-                                <td width="50%" style="padding-right:6px;">
-                                    <a t-att-href="object.review_url + '?accion=aprobar'" style="display:block; text-align:center; padding:16px 0; border-radius:16px; background-color:#C8F169; color:#14180A; font-size:16px; font-weight:700; text-decoration:none;">Aprobar</a>
-                                </td>
-                                <td width="50%" style="padding-left:6px;">
-                                    <a t-att-href="object.review_url + '?accion=rechazar'" style="display:block; text-align:center; padding:14px 0; border-radius:16px; border:2px solid #C23A26; background-color:#FFFFFF; color:#B5341F; font-size:16px; font-weight:700; text-decoration:none;">Rechazar</a>
-                                </td>
-                            </tr>
-                        </table>
-                        <div style="text-align:center; margin-top:16px;">
-                            <a t-att-href="object.review_url" style="color:#2559B3; font-size:14px; font-weight:600;">Ver la solicitud completa</a>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding:16px 8px 0 8px; font-size:12.5px; line-height:1.5; color:#5C636E;">
-                        Para aprobar o rechazar tendrás que iniciar sesión en Odoo con un usuario responsable de Asistencias.
-                        Al aprobar, el fichaje se modifica y su historial guarda el valor anterior, quién lo cambió y cuándo.
-                    </td>
-                </tr>
-            </table>
-        </td>
-    </tr>
-</table>
-        </field>
+        <field name="name">Solicitud de corrección de fichaje</field>
+        <field name="model_id" ref="hr.model_hr_employee"/>
+        <field name="subject">Solicitud corrección de fichaje</field>
+        <field name="body_html"><![CDATA[
+<p>Plantilla de referencia. El contenido real se genera automáticamente desde el portal de fichaje.</p>
+        ]]></field>
+        <field name="auto_delete">True</field>
     </record>
 
     <record id="mail_template_daily_report" model="mail.template">
