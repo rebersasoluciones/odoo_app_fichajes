@@ -310,22 +310,26 @@ class HrEmployee(models.Model):
             ('date_from', '<', emp._quicklink_to_utc(last + datetime.timedelta(days=1), datetime.time.min)),
             ('date_to', '>', emp._quicklink_to_utc(first, datetime.time.min)),
         ])
+        calendar = emp.resource_calendar_id or emp.company_id.resource_calendar_id
+        work_weekdays = {int(day) for day in calendar.attendance_ids.mapped('dayofweek')}
         absence_days = set()
         for leave in leaves:
             start = pytz.utc.localize(leave.date_from).astimezone(tz).date()
             stop = pytz.utc.localize(leave.date_to).astimezone(tz).date()
             name = leave.holiday_status_id.name or ''
             state = LEAVE_STATES.get(leave.state, 'pending')
+            unit = leave.leave_type_request_unit
             current = max(start, first)
             while current <= min(stop, last):
-                days[current.day]['leaves'].append({
-                    'name': name,
-                    'short': (name[:3] + '.') if len(name) > 4 else name,
-                    'state': state,
-                    'unit': leave.leave_type_request_unit,
-                })
-                if state == 'approved':
-                    absence_days.add(current)
+                if unit == 'hour' or not work_weekdays or current.weekday() in work_weekdays:
+                    days[current.day]['leaves'].append({
+                        'name': name,
+                        'short': (name[:3] + '.') if len(name) > 4 else name,
+                        'state': state,
+                        'unit': unit,
+                    })
+                    if state == 'approved' and unit != 'hour':
+                        absence_days.add(current)
                 current += datetime.timedelta(days=1)
         pending_corrections = self.env['attendance.correction.request'].sudo().search_count([
             ('employee_id', '=', emp.id),

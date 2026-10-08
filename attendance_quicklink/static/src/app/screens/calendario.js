@@ -1,7 +1,7 @@
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { Icon } from "../components/icon";
 import { CorrectionSheet } from "../components/correction_sheet";
-import { fmtClock, fmtDayLong, fmtMinutes, monthName, parseDate, toIso } from "../utils";
+import { fmtClock, fmtDayLong, fmtHours, fmtMinutes, monthName, parseDate, toIso } from "../utils";
 
 export class CalendarioScreen extends Component {
     static template = "attendance_quicklink.CalendarioScreen";
@@ -74,7 +74,7 @@ export class CalendarioScreen extends Component {
             const info = data.days[day] || data.days[String(day)] || { minutes: 0, segments: [], leaves: [] };
             const iso = this.dayIso(day);
             const weekday = (data.first_weekday + day - 1) % 7;
-            const leave = info.leaves[0];
+            const leave = info.leaves.find((item) => item.unit !== "hour") || (!info.segments.length && info.leaves[0]);
             const classes = ["qf-day"];
             let label = "";
             if (info.segments.length) {
@@ -135,7 +135,7 @@ export class CalendarioScreen extends Component {
     get stats() {
         const totals = this.state.data ? this.state.data.totals : { minutes: 0, absence_days: 0, pending: 0 };
         return {
-            worked: fmtMinutes(totals.minutes),
+            worked: fmtHours(totals.minutes),
             absences: totals.absence_days === 1 ? "1 día" : `${totals.absence_days} días`,
             pending: String(totals.pending),
         };

@@ -1,0 +1,16 @@
+{
+    'name': 'Attendance Quick Link · Datos demo',
+    'version': '19.0.1.0.0',
+    'author': 'Lógica Consultores 360',
+    'website': 'https://www.logicaconsultores.com',
+    'summary': 'Fichajes, vacaciones, ausencias y correcciones de ejemplo para el usuario 2. Se borran al desinstalar.',
+    'category': 'Human Resources/Attendances',
+    'depends': ['attendance_quicklink'],
+    'data': [],
+    'post_init_hook': 'post_init_hook',
+    'uninstall_hook': 'uninstall_hook',
+    'installable': True,
+    'application': True,
+    'sequence': -111,
+    'license': 'LGPL-3',
+}
