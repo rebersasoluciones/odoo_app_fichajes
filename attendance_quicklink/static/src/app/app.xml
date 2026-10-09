@@ -33,7 +33,7 @@
                         api="api" today="state.home.today"
                         notify="(message, type) => this.notify(message, type)"/>
                     <YoScreen t-else=""
-                        home="state.home" theme="state.theme"
+                        api="api" home="state.home" theme="state.theme"
                         onSetTheme="(theme) => this.setTheme(theme)"
                         notify="(message, type) => this.notify(message, type)"/>
                 </main>

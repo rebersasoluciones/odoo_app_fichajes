@@ -5,6 +5,7 @@ from requests.exceptions import RequestException
 from odoo import _, http
 from odoo.exceptions import AccessError, MissingError, UserError, ValidationError
 from odoo.http import request
+from odoo.tools import file_open
 
 USER_ERRORS = (UserError, ValidationError)
 
@@ -139,6 +140,34 @@ class AttendanceQuicklink(http.Controller):
 
         return self._run(token, create_correction)
 
+    @http.route('/fichaje/<string:token>/api/avisos', type='jsonrpc', auth='public')
+    def api_reminders(self, token, **kwargs):
+        return self._run(token, lambda employee: employee._quicklink_reminders_data())
+
+    @http.route('/fichaje/<string:token>/api/avisos/guardar', type='jsonrpc', auth='public')
+    def api_reminder_save(self, token, reminder_id=None, time=None, kind=None, days=None, delete=False, **kwargs):
+        return self._run(token, lambda employee: employee._quicklink_save_reminder(
+            reminder_id=reminder_id,
+            time=time,
+            kind=kind,
+            days=days,
+            delete=delete,
+        ))
+
+    @http.route('/fichaje/<string:token>/api/avisos/suscribir', type='jsonrpc', auth='public')
+    def api_reminder_subscribe(self, token, subscription=None, vapid_public_key=None, active=True, **kwargs):
+        browser = self._origin()['browser']
+        return self._run(token, lambda employee: employee._quicklink_subscribe(
+            subscription=subscription,
+            vapid_public_key=vapid_public_key,
+            active=active,
+            browser=browser,
+        ))
+
+    @http.route('/fichaje/<string:token>/api/avisos/probar', type='jsonrpc', auth='public')
+    def api_reminder_test(self, token, **kwargs):
+        return self._run(token, lambda employee: employee._quicklink_test_push())
+
     @http.route('/fichaje/<string:token>/manifest.json', type='http', auth='public', sitemap=False)
     def pwa_manifest(self, token, **kwargs):
         employee = self._employee_or_404(token)
@@ -166,11 +195,8 @@ class AttendanceQuicklink(http.Controller):
 
     @http.route('/fichaje/sw.js', type='http', auth='public', sitemap=False)
     def pwa_service_worker(self, **kwargs):
-        script = (
-            "self.addEventListener('install', () => self.skipWaiting());\n"
-            "self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));\n"
-            "self.addEventListener('fetch', () => {});\n"
-        )
+        with file_open('attendance_quicklink/static/sw/service_worker.js') as script_file:
+            script = script_file.read()
         return request.make_response(
             script,
             headers=[

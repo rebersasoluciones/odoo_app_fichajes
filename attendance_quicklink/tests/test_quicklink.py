@@ -1,9 +1,17 @@
 import datetime
+import json
 import re
+from unittest.mock import patch
 
+from freezegun import freeze_time
+
+from odoo.addons.mail.tools.web_push import DeviceUnreachableError
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import HttpCase, TransactionCase, new_test_user, tagged
 from odoo.tools import mute_logger
+
+PUSH = 'odoo.addons.attendance_quicklink.models.attendance_quicklink_device.push_to_end_point'
+MONDAY = datetime.date(2031, 3, 3)
 
 
 class QuicklinkCommon(TransactionCase):
@@ -223,6 +231,159 @@ class TestQuicklink(QuicklinkCommon):
 
 
 @tagged('post_install', '-at_install')
+class TestQuicklinkReminders(QuicklinkCommon):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.vapid_key = cls.env['mail.push.device'].get_web_push_vapid_public_key()
+        cls.device = cls.env['attendance.quicklink.device'].create({
+            'employee_id': cls.employee.id,
+            'endpoint': 'https://push.example.com/laura',
+            'keys': json.dumps({'p256dh': 'p', 'auth': 'a'}),
+        })
+
+    def _reminder(self, hour, kind='in', weekdays='0123456'):
+        return self.env['attendance.quicklink.reminder'].create({
+            'employee_id': self.employee.id,
+            'hour': hour,
+            'kind': kind,
+            'weekdays': weekdays,
+        })
+
+    def _at(self, day, hour, minute):
+        return self.employee._quicklink_to_utc(day, datetime.time(hour, minute))
+
+    def _due_at(self, reminders, hour, minute):
+        moment = self._at(MONDAY, hour, minute)
+        with freeze_time(moment):
+            self.employee.invalidate_recordset(['last_attendance_id', 'attendance_state'])
+            return reminders._due(moment)
+
+    def _check_in(self):
+        with freeze_time(self._at(MONDAY, 7, 55)):
+            self.env['hr.attendance'].create({
+                'employee_id': self.employee.id,
+                'check_in': self._at(MONDAY, 7, 50),
+            })
+
+    def test_due_rules(self):
+        entry = self._reminder(8.0)
+        exit_ = self._reminder(16.0, kind='out')
+        weekend = self._reminder(8.0, weekdays='56')
+        reminders = entry | exit_ | weekend
+        self.assertFalse(self._due_at(reminders, 7, 59))
+        self.assertFalse(entry.last_done_date)
+        self.assertEqual(self._due_at(reminders, 8, 1), entry)
+        self.assertEqual(entry.last_done_date, MONDAY)
+        self.assertFalse(self._due_at(reminders, 8, 2))
+        self.assertFalse(self._due_at(reminders, 16, 5))
+        self.assertEqual(exit_.last_done_date, MONDAY)
+        self.assertFalse(weekend.last_done_date)
+
+    def test_due_depends_on_presence_and_window(self):
+        entry = self._reminder(8.0)
+        exit_ = self._reminder(16.0, kind='out')
+        late = self._reminder(9.0, kind='out')
+        self._check_in()
+        reminders = entry | exit_ | late
+        self.assertFalse(self._due_at(reminders, 8, 5))
+        self.assertEqual(entry.last_done_date, MONDAY)
+        self.assertFalse(self._due_at(reminders, 9, 45))
+        self.assertEqual(late.last_done_date, MONDAY)
+        self.assertEqual(self._due_at(reminders, 16, 10), exit_)
+
+    def test_due_skips_holidays_and_leaves(self):
+        entry = self._reminder(8.0)
+        calendar = self.employee.resource_calendar_id or self.employee.company_id.resource_calendar_id
+        holiday = self.env['resource.calendar.leaves'].create({
+            'name': 'Festivo QL',
+            'calendar_id': calendar.id,
+            'date_from': self._at(MONDAY, 0, 0),
+            'date_to': self._at(MONDAY, 23, 59),
+        })
+        self.assertFalse(self._due_at(entry, 8, 1))
+        holiday.unlink()
+        entry.last_done_date = False
+        leave_type = self.env['hr.leave.type'].create({
+            'name': 'Médico QL',
+            'requires_allocation': False,
+            'request_unit': 'hour',
+            'leave_validation_type': 'hr',
+        })
+        leave = self.env['hr.leave'].create({
+            'employee_id': self.employee.id,
+            'holiday_status_id': leave_type.id,
+            'request_date_from': MONDAY,
+            'request_date_to': MONDAY,
+            'request_hour_from': 10.0,
+            'request_hour_to': 12.0,
+        })
+        leave.action_approve(check_state=False)
+        self.assertEqual(leave.state, 'validate')
+        late = self._reminder(11.0)
+        self.assertEqual(self._due_at(entry, 8, 1), entry)
+        self.assertFalse(self._due_at(late, 11, 1))
+
+    def test_cron_sends_and_removes_dead_devices(self):
+        self._reminder(8.0)
+        with freeze_time(self._at(MONDAY, 8, 2)), patch(PUSH) as push:
+            self.env['attendance.quicklink.reminder']._cron_send_reminders()
+        self.assertEqual(push.call_count, 1)
+        payload = json.loads(push.call_args.kwargs['payload'])
+        self.assertEqual(payload['title'], 'Hora de fichar la entrada')
+        self.assertIn('08:00', payload['body'])
+        self.assertEqual(payload['url'], f'/fichaje/{self.employee.attendance_quick_token}')
+        self._reminder(9.0)
+        with freeze_time(self._at(MONDAY, 9, 1)), patch(PUSH, side_effect=DeviceUnreachableError()):
+            self.env['attendance.quicklink.reminder']._cron_send_reminders()
+        self.assertFalse(self.device.exists())
+
+    def test_save_and_subscribe(self):
+        with freeze_time(self._at(MONDAY, 12, 0)):
+            data = self.employee._quicklink_save_reminder(time='08:30', kind='in', days=[0, 1, 2, 3, 4])
+            self.assertEqual(data['vapid_public_key'], self.vapid_key)
+            self.assertEqual(len(data['reminders']), 1)
+            reminder = self.env['attendance.quicklink.reminder'].browse(data['reminders'][0]['id'])
+            self.assertEqual(reminder.weekdays, '01234')
+            self.assertEqual(reminder.last_done_date, MONDAY)
+            self.employee._quicklink_save_reminder(reminder_id=reminder.id, time='18:00', kind='out', days=[4, 0])
+            self.assertEqual((reminder.hour, reminder.kind, reminder.weekdays), (18.0, 'out', '04'))
+            self.assertFalse(reminder.last_done_date)
+        with self.assertRaises(UserError):
+            self.employee._quicklink_save_reminder(time='25:00', kind='in', days=[0])
+        with self.assertRaises(UserError):
+            self.employee._quicklink_save_reminder(time='08:00', kind='in', days=[])
+        other = self.env['hr.employee'].create({'name': 'Otra persona'})
+        with self.assertRaises(UserError):
+            other._quicklink_save_reminder(reminder_id=reminder.id, delete=True)
+        self.employee._quicklink_save_reminder(reminder_id=reminder.id, delete=True)
+        self.assertFalse(reminder.exists())
+
+        subscription = {'endpoint': 'https://push.example.com/nuevo', 'keys': {'p256dh': 'p2', 'auth': 'a2'}}
+        with self.assertRaises(UserError):
+            self.employee._quicklink_subscribe(subscription=subscription, vapid_public_key='otra')
+        other._quicklink_subscribe(subscription=subscription, vapid_public_key=self.vapid_key)
+        self.employee._quicklink_subscribe(subscription=subscription, vapid_public_key=self.vapid_key, browser='Móvil')
+        device = self.env['attendance.quicklink.device'].search([('endpoint', '=', subscription['endpoint'])])
+        self.assertEqual(device.employee_id, self.employee)
+        self.employee._quicklink_subscribe(subscription=subscription, active=False)
+        self.assertFalse(device.exists())
+
+    def test_regenerating_link_removes_devices(self):
+        self.employee.action_regenerate_attendance_quick_token()
+        self.assertFalse(self.device.exists())
+
+    def test_test_push(self):
+        with patch(PUSH) as push:
+            self.employee._quicklink_test_push()
+        self.assertEqual(push.call_count, 1)
+        self.device.unlink()
+        with self.assertRaises(UserError):
+            self.employee._quicklink_test_push()
+
+
+@tagged('post_install', '-at_install')
 class TestQuicklinkHttp(HttpCase):
 
     def setUp(self):
@@ -261,6 +422,29 @@ class TestQuicklinkHttp(HttpCase):
 
         manifest = self.url_open(f'/fichaje/{self.token}/manifest.json')
         self.assertEqual(manifest.json()['start_url'], f'/fichaje/{self.token}')
+
+    def test_reminder_api(self):
+        base = f'/fichaje/{self.token}/api/avisos'
+        result = self.make_jsonrpc_request(base)['result']
+        self.assertTrue(result['vapid_public_key'])
+        self.assertEqual(result['reminders'], [])
+        result = self.make_jsonrpc_request(f'{base}/guardar', {'time': '08:00', 'kind': 'in', 'days': [0, 1, 2, 3, 4]})
+        self.assertEqual(result['result']['reminders'][0]['time'], '08:00')
+        result = self.make_jsonrpc_request(f'{base}/guardar', {'time': '08:00', 'kind': 'x', 'days': [0]})
+        self.assertIn('error', result)
+        result = self.make_jsonrpc_request(f'{base}/probar')
+        self.assertIn('error', result)
+        result = self.make_jsonrpc_request(f'{base}/suscribir', {
+            'subscription': {'endpoint': 'https://push.example.com/http', 'keys': {'p256dh': 'p', 'auth': 'a'}},
+            'vapid_public_key': self.make_jsonrpc_request(base)['result']['vapid_public_key'],
+        })
+        self.assertTrue(result['result'])
+        with patch(PUSH) as push:
+            result = self.make_jsonrpc_request(f'{base}/probar')
+        self.assertTrue(result['result'])
+        self.assertEqual(push.call_count, 1)
+        sw = self.url_open('/fichaje/sw.js')
+        self.assertIn('notificationclick', sw.text)
 
     def test_toggle_records_origin_and_location(self):
         result = self.make_jsonrpc_request(

@@ -1305,3 +1305,139 @@
         transition-duration: 0.01ms !important;
     }
 }
+
+.qf-tag-sky {
+    background: var(--qf-sky-soft);
+    color: var(--qf-sky-text);
+}
+
+.qf-switch {
+    position: relative;
+    width: 52px;
+    height: 32px;
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: var(--qf-track);
+    transition: background-color 160ms ease-out;
+
+    &.is-on {
+        background: var(--qf-acc);
+    }
+
+    &.is-busy {
+        opacity: 0.7;
+    }
+
+    &[disabled]:not(.is-busy) {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+}
+
+.qf-switch-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--qf-thumb);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: transform 160ms ease-out;
+
+    .is-on > & {
+        transform: translateX(20px);
+    }
+}
+
+.qf-reminders {
+    display: flex;
+    flex-direction: column;
+    margin-top: 6px;
+    border-top: 1px solid var(--qf-line);
+}
+
+.qf-reminder {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 60px;
+    padding: 8px 2px;
+    border: none;
+    border-bottom: 1px solid var(--qf-line);
+    background: transparent;
+    color: var(--qf-ink);
+    text-align: left;
+
+    > .qf-icon {
+        color: var(--qf-faint);
+    }
+}
+
+.qf-reminder-time {
+    font-family: $qf-display;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    min-width: 72px;
+}
+
+.qf-reminder-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.qf-reminder-days {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.qf-empty-tight {
+    padding: 14px 8px 4px;
+}
+
+.qf-chipbtn-block {
+    width: 100%;
+    min-height: 44px;
+}
+
+.qf-daychips {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.qf-daychip {
+    min-height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--qf-line);
+    background: var(--qf-s2);
+    color: var(--qf-dim);
+    font-size: 14px;
+    font-weight: 700;
+
+    &.is-on {
+        background: var(--qf-acc);
+        border-color: var(--qf-acc);
+        color: var(--qf-acc-ink);
+    }
+}
+
+.qf-btn-danger {
+    color: var(--qf-stop-text);
+    border-color: var(--qf-stop-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .qf-switch, .qf-switch-thumb {
+        transition: none;
+    }
+}

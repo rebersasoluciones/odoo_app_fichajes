@@ -1,4 +1,5 @@
 import datetime
+import json
 import uuid
 
 import pytz
@@ -84,6 +85,11 @@ class HrEmployee(models.Model):
             if not vals.get('attendance_quick_token'):
                 vals['attendance_quick_token'] = uuid.uuid4().hex
         return super().create(vals_list)
+
+    def write(self, vals):
+        if 'attendance_quick_token' in vals:
+            self.env['attendance.quicklink.device'].sudo().search([('employee_id', 'in', self.ids)]).unlink()
+        return super().write(vals)
 
     @api.depends('attendance_quick_token')
     def _compute_attendance_quick_url(self):
@@ -498,3 +504,112 @@ class HrEmployee(models.Model):
             mail_create_nosubscribe=True,
             quicklink_origin=origin or {},
         ).create(vals)
+
+    def _quicklink_is_off(self, day, moment):
+        self.ensure_one()
+        emp = self.sudo()
+        day_start = emp._quicklink_to_utc(day, datetime.time.min)
+        day_end = emp._quicklink_to_utc(day + datetime.timedelta(days=1), datetime.time.min)
+        calendar = emp.resource_calendar_id or emp.company_id.resource_calendar_id
+        if self.env['resource.calendar.leaves'].sudo().search_count([
+            ('resource_id', '=', False),
+            ('time_type', '=', 'leave'),
+            ('company_id', '=', emp.company_id.id),
+            ('calendar_id', 'in', [calendar.id, False]),
+            ('date_from', '<', day_end),
+            ('date_to', '>', day_start),
+        ], limit=1):
+            return True
+        leaves = self.env['hr.leave'].sudo().search([
+            ('employee_id', '=', emp.id),
+            ('state', '=', 'validate'),
+            ('date_from', '<', day_end),
+            ('date_to', '>', day_start),
+        ])
+        return any(
+            leave.leave_type_request_unit != 'hour' or leave.date_from <= moment <= leave.date_to
+            for leave in leaves
+        )
+
+    def _quicklink_reminders_data(self):
+        self.ensure_one()
+        emp = self.sudo()
+        reminders = self.env['attendance.quicklink.reminder'].sudo().search([('employee_id', '=', emp.id)])
+        return {
+            'reminders': reminders._quicklink_data(),
+            'vapid_public_key': self.env['mail.push.device'].sudo().get_web_push_vapid_public_key(),
+        }
+
+    def _quicklink_save_reminder(self, reminder_id=None, time=None, kind=None, days=None, delete=False):
+        self.ensure_one()
+        emp = self.sudo()
+        Reminder = self.env['attendance.quicklink.reminder'].sudo()
+        reminder = Reminder
+        if reminder_id:
+            reminder = Reminder.browse(int(reminder_id)).exists()
+            if not reminder or reminder.employee_id != emp:
+                raise UserError(_('Ese aviso ya no existe.'))
+        if delete:
+            reminder.unlink()
+            return emp._quicklink_reminders_data()
+        moment = _parse_hour(time)
+        if kind not in ('in', 'out'):
+            raise UserError(_('Elige si el aviso es de entrada o de salida.'))
+        try:
+            digits = ''.join(sorted({str(int(day)) for day in days or []}))
+        except (TypeError, ValueError):
+            digits = ''
+        if not digits or set(digits) - set('0123456'):
+            raise UserError(_('Elige al menos un día para el aviso.'))
+        vals = {'hour': moment.hour + moment.minute / 60, 'kind': kind, 'weekdays': digits}
+        if reminder:
+            reminder.write(vals)
+        else:
+            if Reminder.search_count([('employee_id', '=', emp.id)]) >= 20:
+                raise UserError(_('Has llegado al máximo de 20 avisos.'))
+            reminder = Reminder.create({**vals, 'employee_id': emp.id})
+        reminder._mark_past_as_done()
+        return emp._quicklink_reminders_data()
+
+    def _quicklink_subscribe(self, subscription=None, vapid_public_key=None, active=True, browser=None):
+        self.ensure_one()
+        emp = self.sudo()
+        subscription = subscription if isinstance(subscription, dict) else {}
+        endpoint = subscription.get('endpoint')
+        keys = subscription.get('keys') or {}
+        Device = self.env['attendance.quicklink.device'].sudo()
+        if not active:
+            if endpoint:
+                Device.search([('endpoint', '=', endpoint), ('employee_id', '=', emp.id)]).unlink()
+            return True
+        if not endpoint or not keys.get('p256dh') or not keys.get('auth'):
+            raise UserError(_('El navegador no ha devuelto una suscripción válida.'))
+        if vapid_public_key != self.env['mail.push.device'].sudo().get_web_push_vapid_public_key():
+            raise UserError(_('La configuración de avisos ha cambiado. Recarga la app e inténtalo de nuevo.'))
+        vals = {
+            'employee_id': emp.id,
+            'keys': json.dumps({'p256dh': keys['p256dh'], 'auth': keys['auth']}),
+            'name': (browser or '')[:255] or False,
+        }
+        device = Device.search([('endpoint', '=', endpoint)], limit=1)
+        if device:
+            device.write(vals)
+        else:
+            Device.create({**vals, 'endpoint': endpoint})
+        return True
+
+    def _quicklink_test_push(self):
+        self.ensure_one()
+        emp = self.sudo()
+        devices = self.env['attendance.quicklink.device'].sudo().search([('employee_id', '=', emp.id)])
+        if not devices:
+            raise UserError(_('Activa primero los avisos en este móvil.'))
+        sent = devices._send({
+            'title': _('Avisos activados'),
+            'body': _('Así te llegarán los avisos para fichar.'),
+            'url': f'/fichaje/{emp.attendance_quick_token}',
+            'tag': 'qf-reminder',
+        })
+        if not sent:
+            raise UserError(_('No se ha podido enviar el aviso. Desactiva y vuelve a activar los avisos.'))
+        return True

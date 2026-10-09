@@ -68,10 +68,44 @@
                 </div>
             </section>
 
+            <section class="qf-card">
+                <div class="qf-card-title qf-mb">Avisos para fichar</div>
+                <div class="qf-kv qf-kv-tall">
+                    <Icon name="'bell'" size="20"/>
+                    <div class="qf-kv-text">
+                        <div class="qf-strong">Recibir avisos en este móvil</div>
+                        <div class="qf-dim qf-small" t-esc="pushText"/>
+                    </div>
+                    <button type="button" role="switch" class="qf-switch" t-att-class="{ 'is-on': state.pushOn, 'is-busy': state.pushBusy }" t-att-aria-checked="state.pushOn ? 'true' : 'false'" aria-label="Recibir avisos en este móvil" t-att-disabled="pushDisabled" t-on-click="() => this.togglePush()">
+                        <span class="qf-switch-thumb"/>
+                    </button>
+                </div>
+                <div class="qf-reminders" t-if="state.reminders.length">
+                    <button type="button" class="qf-reminder" t-foreach="state.reminders" t-as="reminder" t-key="reminder.id" t-on-click="() => this.openSheet(reminder)">
+                        <span class="qf-reminder-time qf-num" t-esc="reminder.time"/>
+                        <span class="qf-reminder-text">
+                            <span class="qf-tag" t-att-class="reminder.kind === 'in' ? 'qf-tag-ok' : 'qf-tag-sky'" t-esc="reminder.kind === 'in' ? 'Entrada' : 'Salida'"/>
+                            <span class="qf-dim qf-small qf-reminder-days" t-esc="daysLabel(reminder.days)"/>
+                        </span>
+                        <Icon name="'chevron-right'" size="18"/>
+                    </button>
+                </div>
+                <div class="qf-empty qf-empty-tight" t-else="">Añade la hora a la que quieres que te recuerde fichar. Solo te avisa si se te ha olvidado.</div>
+                <button type="button" class="qf-addbtn" t-on-click="() => this.openSheet()">
+                    <Icon name="'plus'" size="18"/>
+                    Añadir aviso
+                </button>
+                <button type="button" class="qf-chipbtn qf-chipbtn-block" t-if="state.pushOn" t-on-click="() => this.testPush()">Probar aviso en este móvil</button>
+            </section>
+
             <div class="qf-footnote">
                 <Icon name="'lock'" size="16"/>
                 <span>Este enlace es solo tuyo. Si lo pierdes o crees que alguien lo tiene, pide uno nuevo a RRHH.</span>
             </div>
+
+            <ReminderSheet t-if="state.sheet" api="props.api" reminder="state.sheet.reminder"
+                onClose="() => this.state.sheet = null"
+                onSaved="(data, message) => this.onSaved(data, message)"/>
         </div>
     </t>
 </templates>

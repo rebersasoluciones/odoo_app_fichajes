@@ -5,6 +5,7 @@ import { FicharScreen } from "./screens/fichar";
 import { CalendarioScreen } from "./screens/calendario";
 import { SolicitudesScreen } from "./screens/solicitudes";
 import { YoScreen } from "./screens/yo";
+import { syncPush } from "./pwa";
 
 const TABS = [
     { key: "fichar", label: "Fichar", icon: "clock" },
@@ -60,6 +61,15 @@ export class FichajeApp extends Component {
         });
         onMounted(() => {
             this.applyThemeColor();
+            if ("serviceWorker" in navigator) {
+                this.onWorkerMessage = (event) => {
+                    if (event.data && event.data.type === "qf-open") {
+                        window.location.hash = event.data.tab;
+                    }
+                };
+                navigator.serviceWorker.addEventListener("message", this.onWorkerMessage);
+            }
+            syncPush(this.api);
             this.timer = setInterval(() => this.tick(), 15000);
             if (this.darkQuery && this.darkQuery.addEventListener) {
                 this.onSchemeChange = () => this.applyThemeColor();
@@ -68,6 +78,9 @@ export class FichajeApp extends Component {
         });
         onWillUnmount(() => {
             clearInterval(this.timer);
+            if (this.onWorkerMessage) {
+                navigator.serviceWorker.removeEventListener("message", this.onWorkerMessage);
+            }
             if (this.darkQuery && this.onSchemeChange) {
                 this.darkQuery.removeEventListener("change", this.onSchemeChange);
             }
