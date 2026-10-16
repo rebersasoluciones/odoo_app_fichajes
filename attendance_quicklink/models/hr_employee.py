@@ -6,6 +6,7 @@ import pytz
 from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, fields, models
+from odoo.fields import Command
 from odoo.exceptions import UserError
 from odoo.tools import SQL
 from odoo.tools.date_utils import sum_intervals
@@ -164,10 +165,11 @@ class HrEmployee(models.Model):
     def _quicklink_pending_fix_ids(self, attendances):
         if not attendances:
             return set()
-        return set(self.env['attendance.correction.request'].sudo().search([
-            ('attendance_id', 'in', attendances.ids),
+        requests = self.env['attendance.correction.request'].sudo().search([
             ('state', '=', 'pending'),
-        ]).attendance_id.ids)
+            '|', ('attendance_id', 'in', attendances.ids), ('merged_attendance_ids', 'in', attendances.ids),
+        ])
+        return set((requests.attendance_id | requests.merged_attendance_ids).ids)
 
     def _quicklink_home_data(self):
         self.ensure_one()
@@ -459,7 +461,7 @@ class HrEmployee(models.Model):
                 raise UserError(_('Ese fichaje no es tuyo.'))
             if not attendance.check_out and attendance.date == today:
                 raise UserError(_('Ese tramo sigue abierto: ficha la salida desde la pestaña Fichar.'))
-            if Correction.search_count([('attendance_id', '=', attendance.id), ('state', '=', 'pending')]):
+            if Correction._pending_for(attendance):
                 raise UserError(_('Ya tienes una corrección pendiente para ese tramo.'))
             day = attendance.date
             vals.update(kind='fix', attendance_id=attendance.id)
@@ -474,26 +476,43 @@ class HrEmployee(models.Model):
         stop = _parse_hour(check_out)
         if stop <= start:
             raise UserError(_('La salida tiene que ser posterior a la entrada.'))
-        if attendance and attendance.check_out and (
-            emp._quicklink_hhmm(attendance.check_in) == start.strftime('%H:%M')
-            and emp._quicklink_hhmm(attendance.check_out) == stop.strftime('%H:%M')
-        ):
-            raise UserError(_('Las horas son las mismas que ya tienes registradas.'))
         requested_in = emp._quicklink_to_utc(day, start)
         requested_out = emp._quicklink_to_utc(day, stop)
-        overlap = self.env['hr.attendance'].sudo().search([
+        overlaps = self.env['hr.attendance'].sudo().search([
             ('employee_id', '=', emp.id),
             ('id', '!=', attendance.id or 0),
             ('check_in', '<', requested_out),
             '|', ('check_out', '>', requested_in), ('check_out', '=', False),
-        ], order='check_in', limit=1)
-        if overlap:
+        ], order='check_in')
+        blocking = overlaps.filtered(lambda overlap: overlap.date != day or not overlap.check_out)
+        if blocking:
+            first = blocking[0]
+            if not first.check_out:
+                raise UserError(_(
+                    'Esas horas pisan un tramo que sigue abierto (desde las %(start)s). '
+                    'Ficha la salida antes de pedir la corrección.',
+                    start=emp._quicklink_hhmm(first.check_in),
+                ))
             raise UserError(_(
-                'Esas horas se solapan con otro tramo que ya tienes (%(start)s → %(stop)s). '
+                'Esas horas se solapan con un tramo de otro día (%(start)s → %(stop)s). '
                 'Corrige ese tramo o ajusta las horas.',
-                start=emp._quicklink_hhmm(overlap.check_in),
-                stop=emp._quicklink_hhmm(overlap.check_out) if overlap.check_out else _('sin salida'),
+                start=emp._quicklink_hhmm(first.check_in),
+                stop=emp._quicklink_hhmm(first.check_out),
             ))
+        if overlaps and Correction._pending_for(overlaps):
+            raise UserError(_(
+                'Uno de los tramos que se unirían ya tiene una corrección pendiente. Espera a que RRHH la resuelva.'
+            ))
+        if overlaps and not attendance:
+            attendance = overlaps[0]
+            overlaps -= attendance
+            vals.update(kind='fix', attendance_id=attendance.id)
+        if not overlaps and attendance and attendance.check_out and (
+            emp._quicklink_hhmm(attendance.check_in) == start.strftime('%H:%M')
+            and emp._quicklink_hhmm(attendance.check_out) == stop.strftime('%H:%M')
+        ):
+            raise UserError(_('Las horas son las mismas que ya tienes registradas.'))
+        vals['merged_attendance_ids'] = [Command.set(overlaps.ids)]
         vals.update(
             date=day,
             requested_check_in=requested_in,

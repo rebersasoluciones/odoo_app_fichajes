@@ -10,15 +10,19 @@ export class CorrectionSheet extends Component {
         api: Object,
         day: String,
         segment: { type: Object, optional: true },
+        segments: { type: Array, optional: true },
+        whole: { type: Boolean, optional: true },
         onClose: Function,
         onSent: Function,
     };
 
     setup() {
         const segment = this.props.segment;
+        const segments = this.props.segments || [];
+        const last = segments.length ? segments[segments.length - 1] : null;
         this.state = useState({
             checkIn: segment ? segment.in : "",
-            checkOut: segment && segment.out ? segment.out : "",
+            checkOut: this.props.whole && last && last.out ? last.out : segment && segment.out ? segment.out : "",
             reason: "",
             busy: false,
             error: "",
@@ -31,12 +35,18 @@ export class CorrectionSheet extends Component {
     }
 
     get title() {
+        if (this.props.whole) {
+            return "Corregir el día";
+        }
         return this.isFix ? "Corregir fichaje" : "Añadir tramo olvidado";
     }
 
     get subtitle() {
         const day = fmtDayLong(this.props.day);
         const segment = this.props.segment;
+        if (this.props.whole) {
+            return `${day} · ${(this.props.segments || []).length} tramos registrados`;
+        }
         if (!segment) {
             return `${day} · sin fichaje registrado`;
         }
@@ -52,10 +62,50 @@ export class CorrectionSheet extends Component {
         return stop - start;
     }
 
+    get merging() {
+        const start = timeToMinutes(this.state.checkIn);
+        const stop = timeToMinutes(this.state.checkOut);
+        if (start === null || stop === null || stop <= start) {
+            return [];
+        }
+        const mainId = this.props.segment ? this.props.segment.id : null;
+        return (this.props.segments || []).filter((item) => {
+            if (item.id === mainId || !item.out) {
+                return false;
+            }
+            const itemStart = timeToMinutes(item.in);
+            const itemStop = timeToMinutes(item.out);
+            return itemStop > itemStart && itemStart < stop && itemStop > start;
+        });
+    }
+
+    get mergeText() {
+        const merging = this.merging;
+        if (!merging.length) {
+            return "";
+        }
+        const all = this.props.segment ? [this.props.segment, ...merging] : merging;
+        if (all.length < 2) {
+            return "";
+        }
+        const list = all
+            .slice()
+            .sort((a, b) => timeToMinutes(a.in) - timeToMinutes(b.in))
+            .map((item) => `${item.in} → ${item.out || "sin salida"}`);
+        const joined = `${list.slice(0, -1).join(", ")} y ${list[list.length - 1]}`;
+        return `Se unirán ${joined}. Quedará un solo fichaje de ${this.state.checkIn} a ${this.state.checkOut}.`;
+    }
+
     get diffText() {
         const requested = this.requestedMinutes;
         if (requested === null) {
             return "";
+        }
+        const merging = this.merging;
+        if (merging.length) {
+            const base = this.props.segment && this.props.segment.out ? [this.props.segment, ...merging] : merging;
+            const original = base.reduce((total, item) => total + timeToMinutes(item.out) - timeToMinutes(item.in), 0);
+            return `${fmtSigned(requested - original)} respecto a lo registrado`;
         }
         const segment = this.props.segment;
         if (!segment || !segment.out) {

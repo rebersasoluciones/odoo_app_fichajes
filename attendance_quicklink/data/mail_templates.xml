@@ -74,7 +74,7 @@
                                             <t t-else="">sin salida</t>
                                         </td>
                                         <td align="right" style="padding:9px 0; border-bottom:1px solid #E4E0D7; color:#5C636E;">
-                                            <t t-if="att == object.attendance_id">el que se corrige</t>
+                                            <t t-if="att == object.attendance_id">el que se corrige</t><t t-elif="att in object.merged_attendance_ids">se une y se elimina</t>
                                         </td>
                                     </tr>
                                 </t>

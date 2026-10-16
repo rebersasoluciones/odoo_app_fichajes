@@ -16,6 +16,10 @@
                 <Icon name="'clock'" size="15"/>
                 <span t-esc="diffText"/>
             </div>
+            <div class="qf-merge" t-if="mergeText" role="status">
+                <Icon name="'alert'" size="16"/>
+                <span t-esc="mergeText"/>
+            </div>
             <label class="qf-field">
                 <span class="qf-field-label">Motivo</span>
                 <textarea class="qf-input qf-textarea" rows="3" t-model="state.reason"/>

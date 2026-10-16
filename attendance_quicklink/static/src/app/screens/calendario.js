@@ -153,12 +153,21 @@ export class CalendarioScreen extends Component {
         this.state.selected = day;
     }
 
+    canFixDay(info) {
+        return info.segments.length > 1 && info.segments.every((segment) => this.canFix(segment, info) && segment.out);
+    }
+
     openFix(segment) {
-        this.state.sheet = { day: this.selectedInfo.iso, segment };
+        this.state.sheet = { day: this.selectedInfo.iso, segment, segments: this.selectedInfo.segments, whole: false };
+    }
+
+    openDay() {
+        const segments = this.selectedInfo.segments;
+        this.state.sheet = { day: this.selectedInfo.iso, segment: segments[0], segments, whole: true };
     }
 
     openMissing() {
-        this.state.sheet = { day: this.selectedInfo.iso, segment: undefined };
+        this.state.sheet = { day: this.selectedInfo.iso, segment: undefined, segments: this.selectedInfo.segments, whole: false };
     }
 
     closeSheet() {

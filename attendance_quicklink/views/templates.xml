@@ -93,6 +93,7 @@
                         <div class="qlr-row" t-foreach="rows" t-as="row">
                             <span class="qlr-row-main"><t t-out="row['text']"/></span>
                             <span class="qlr-row-side" t-if="row['target']">el que se corrige</span>
+                            <span class="qlr-row-side" t-elif="row['merged']">se une y se elimina</span>
                         </div>
                         <div class="qlr-row" t-if="not rows">
                             <span class="qlr-row-side">Sin fichajes ese día</span>
@@ -106,7 +107,7 @@
                         <div class="qlr-actions">
                             <form method="post" t-attf-action="/fichaje/correccion/#{record.id}/aprobar" t-attf-class="qlr-action #{'qlr-action-focus' if action == 'aprobar' else ''}">
                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                <p class="qlr-text">Al aprobar, el fichaje se modifica en Odoo y su historial guarda el valor anterior, tu usuario y la hora del cambio.</p>
+                                <p class="qlr-text">Al aprobar, el fichaje se modifica en Odoo y su historial guarda el valor anterior, tu usuario y la hora del cambio.<t t-if="record.merged_segments"> Los tramos que se unen se eliminan y quedan anotados en la solicitud y en el fichaje.</t></p>
                                 <button type="submit" class="qlr-btn qlr-btn-ok">Aprobar la corrección</button>
                             </form>
                             <form method="post" t-attf-action="/fichaje/correccion/#{record.id}/rechazar" t-attf-class="qlr-action #{'qlr-action-focus' if action == 'rechazar' else ''}">

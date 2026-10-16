@@ -70,13 +70,17 @@
                 <div class="qf-row qf-row-empty" t-if="!selectedInfo.segments.length and !selectedInfo.leaves.length">
                     <t t-esc="selectedInfo.isPast ? 'Sin fichajes este día.' : 'Aún no ha llegado este día.'"/>
                 </div>
+                <button type="button" class="qf-addbtn" t-if="canFixDay(selectedInfo)" t-on-click="() => this.openDay()">
+                    <Icon name="'pencil'" size="17"/>
+                    Corregir el día entero
+                </button>
                 <button type="button" class="qf-addbtn" t-if="selectedInfo.isPast" t-on-click="() => this.openMissing()">
                     <Icon name="'plus'" size="17"/>
                     Añadir un tramo que olvidé fichar
                 </button>
             </section>
 
-            <CorrectionSheet t-if="state.sheet" api="props.api" day="state.sheet.day" segment="state.sheet.segment" onClose="() => this.closeSheet()" onSent="() => this.onSent()"/>
+            <CorrectionSheet t-if="state.sheet" api="props.api" day="state.sheet.day" segment="state.sheet.segment" segments="state.sheet.segments" whole="state.sheet.whole" onClose="() => this.closeSheet()" onSent="() => this.onSent()"/>
         </div>
     </t>
 </templates>

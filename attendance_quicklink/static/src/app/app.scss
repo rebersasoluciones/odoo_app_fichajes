@@ -1170,6 +1170,19 @@
     font-variant-numeric: tabular-nums;
 }
 
+.qf-input[type="time"], .qf-input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    line-height: 50px;
+
+    &::-webkit-date-and-time-value {
+        text-align: left;
+    }
+}
+
 .qf-input-changed {
     border: 2px solid var(--qf-acc-line);
 }
@@ -1440,4 +1453,17 @@
     .qf-switch, .qf-switch-thumb {
         transition: none;
     }
+}
+
+.qf-merge {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: var(--qf-warn-soft);
+    color: var(--qf-warn-text);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
 }

@@ -100,11 +100,59 @@ class TestQuicklink(QuicklinkCommon):
         self.assertEqual(request.attendance_id.check_out, self.employee._quicklink_to_utc(self.yesterday, datetime.time(18, 0)))
 
     def test_overlap_is_rejected_when_requesting(self):
-        self._attendance(self.yesterday, datetime.time(9, 0), datetime.time(14, 0))
-        with self.assertRaises(UserError):
+        before = self.yesterday - datetime.timedelta(days=1)
+        self.env['hr.attendance'].create({
+            'employee_id': self.employee.id,
+            'check_in': self.employee._quicklink_to_utc(before, datetime.time(22, 0)),
+            'check_out': self.employee._quicklink_to_utc(self.yesterday, datetime.time(2, 0)),
+        })
+        with self.assertRaisesRegex(UserError, 'otro día'):
             self.employee._quicklink_request_correction(
-                day=self.yesterday.isoformat(), check_in='13:00', check_out='15:00', reason='Solape',
+                day=self.yesterday.isoformat(), check_in='01:00', check_out='03:00', reason='Solape',
             )
+        self._attendance(self.yesterday, datetime.time(9, 0), None)
+        with self.assertRaisesRegex(UserError, 'sigue abierto'):
+            self.employee._quicklink_request_correction(
+                day=self.yesterday.isoformat(), check_in='08:00', check_out='10:00', reason='Solape',
+            )
+
+    def test_merge_segments_on_approval(self):
+        first = self._attendance(self.yesterday, datetime.time(7, 0), datetime.time(13, 49))
+        second = self._attendance(self.yesterday, datetime.time(13, 50), datetime.time(14, 32))
+        request = self.employee._quicklink_request_correction(
+            day=self.yesterday.isoformat(), check_in='07:00', check_out='15:00',
+            reason='Desfiché sin querer', attendance_id=first.id,
+        )
+        self.assertEqual(request.merged_attendance_ids, second)
+        self.assertEqual(request.merged_segments, '13:50 → 14:32')
+        self.assertEqual(request.merged_minutes, 42)
+        self.assertEqual(request.original_text, '07:00 → 13:49 + 13:50 → 14:32')
+        self.assertEqual(request.delta_text, '+29 min')
+        self.assertEqual(self.employee._quicklink_pending_fix_ids(first | second), {first.id, second.id})
+        with self.assertRaisesRegex(UserError, 'pendiente'):
+            self.employee._quicklink_request_correction(
+                day=self.yesterday.isoformat(), check_in='13:00', check_out='14:40',
+                reason='Otra', attendance_id=second.id,
+            )
+        request.with_user(self.manager).action_approve()
+        self.assertEqual(request.state, 'approved')
+        self.assertFalse(second.exists())
+        self.assertEqual(first.check_out, self.employee._quicklink_to_utc(self.yesterday, datetime.time(15, 0)))
+        self.assertEqual(request.merged_segments, '13:50 → 14:32')
+        self.assertTrue(first.message_ids.filtered(lambda m: 'Se han unido' in (m.body or '')))
+
+    def test_merge_from_missing_and_reject_keeps_segments(self):
+        first = self._attendance(self.yesterday, datetime.time(7, 0), datetime.time(13, 49))
+        second = self._attendance(self.yesterday, datetime.time(13, 50), datetime.time(14, 32))
+        request = self.employee._quicklink_request_correction(
+            day=self.yesterday.isoformat(), check_in='07:00', check_out='15:00', reason='Todo el día',
+        )
+        self.assertEqual(request.kind, 'fix')
+        self.assertEqual(request.attendance_id, first)
+        self.assertEqual(request.merged_attendance_ids, second)
+        request.with_user(self.manager).action_reject(reason='No consta')
+        self.assertTrue(second.exists())
+        self.assertEqual(first.check_out, self.employee._quicklink_to_utc(self.yesterday, datetime.time(13, 49)))
 
     def test_overlapping_correction_stays_pending(self):
         request = self.employee._quicklink_request_correction(

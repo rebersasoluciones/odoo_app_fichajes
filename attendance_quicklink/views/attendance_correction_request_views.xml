@@ -48,6 +48,7 @@
                             <field name="kind" readonly="1"/>
                             <field name="date" readonly="1"/>
                             <field name="attendance_id" readonly="1" invisible="not attendance_id"/>
+                            <field name="merged_segments" invisible="not merged_segments"/>
                             <field name="reason" readonly="1"/>
                         </group>
                         <group string="Horas">
