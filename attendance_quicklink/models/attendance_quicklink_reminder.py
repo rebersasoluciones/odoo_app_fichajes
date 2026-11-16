@@ -40,6 +40,11 @@ class AttendanceQuicklinkReminder(models.Model):
     def _hhmm(self):
         return self._time().strftime('%H:%M')
 
+    def _today(self):
+        self.ensure_one()
+        tz = self.employee_id._quicklink_tz()
+        return pytz.utc.localize(fields.Datetime.now()).astimezone(tz).date()
+
     def _payload(self):
         self.ensure_one()
         url = f'/fichaje/{self.employee_id.attendance_quick_token}'
@@ -83,12 +88,13 @@ class AttendanceQuicklinkReminder(models.Model):
                 moment = tz.localize(datetime.datetime.combine(today, reminder._time()))
                 if moment > local_now:
                     continue
-                reminder.last_done_date = today
                 if local_now - moment > REMINDER_WINDOW:
+                    reminder.last_done_date = today
                     continue
                 if (reminder.kind == 'in') == checked_in:
                     continue
                 if employee._quicklink_is_off(today, moment.astimezone(pytz.utc).replace(tzinfo=None)):
+                    reminder.last_done_date = today
                     continue
                 due |= reminder
         return due
@@ -102,4 +108,6 @@ class AttendanceQuicklinkReminder(models.Model):
         due = reminders._due(fields.Datetime.now())
         devices_by_employee = devices.grouped('employee_id')
         for reminder in due:
-            devices_by_employee[reminder.employee_id].exists()._send(reminder._payload())
+            sent = devices_by_employee[reminder.employee_id].exists()._send(reminder._payload())
+            if sent:
+                reminder.last_done_date = reminder._today()

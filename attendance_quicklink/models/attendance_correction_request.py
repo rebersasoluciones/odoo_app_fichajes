@@ -8,7 +8,6 @@ PROTECTED_FIELDS = {
     'employee_id', 'kind', 'date', 'reason',
     'original_check_in', 'original_check_out',
     'requested_check_in', 'requested_check_out',
-    'merged_attendance_ids', 'merged_segments', 'merged_minutes',
 }
 
 
@@ -44,11 +43,6 @@ class AttendanceCorrectionRequest(models.Model):
     attendance_id = fields.Many2one(
         'hr.attendance', string='Fichaje', ondelete='set null', index='btree_not_null')
     date = fields.Date(string='Día', required=True, index=True)
-    merged_attendance_ids = fields.Many2many(
-        'hr.attendance', 'attendance_correction_merge_rel', 'request_id', 'attendance_id',
-        string='Fichajes que se unen')
-    merged_segments = fields.Char(string='Tramos que se unen', readonly=True)
-    merged_minutes = fields.Integer(readonly=True)
     original_check_in = fields.Datetime(string='Entrada registrada', readonly=True)
     original_check_out = fields.Datetime(string='Salida registrada', readonly=True)
     requested_check_in = fields.Datetime(string='Entrada solicitada', required=True)
@@ -121,7 +115,7 @@ class AttendanceCorrectionRequest(models.Model):
                 request.day_attendance_ids = False
 
     @api.depends('employee_id', 'date', 'kind', 'attendance_id', 'original_check_in', 'original_check_out',
-                 'requested_check_in', 'requested_check_out', 'state', 'merged_segments', 'merged_minutes')
+                 'requested_check_in', 'requested_check_out', 'state')
     def _compute_texts(self):
         now = fields.Datetime.now()
         for request in self:
@@ -141,14 +135,6 @@ class AttendanceCorrectionRequest(models.Model):
                 out = hhmm(request.original_check_out) if request.original_check_out else _('sin salida')
                 request.original_text = f'{hhmm(request.original_check_in)} → {out}'
                 request.original_duration_text = _fmt_minutes(original_minutes) if request.original_check_out else _('sin cerrar')
-                if request.merged_segments:
-                    original_minutes += request.merged_minutes
-                    request.original_text = f'{request.original_text} + {request.merged_segments}'
-                    request.original_duration_text = _(
-                        '%(count)s tramos · %(total)s',
-                        count=request.merged_segments.count('+') + 2,
-                        total=_fmt_minutes(original_minutes),
-                    )
             else:
                 original_minutes = 0
                 request.original_text = _('Sin fichaje')
@@ -162,10 +148,8 @@ class AttendanceCorrectionRequest(models.Model):
                 request.day_total_text = _fmt_minutes(day_minutes)
             else:
                 current = day_minutes
-                replaced = request.merged_attendance_ids
-                if request.kind == 'fix':
-                    replaced |= request.attendance_id
-                current -= sum(_minutes(att.check_in, att.check_out or now) for att in replaced)
+                if request.kind == 'fix' and request.attendance_id:
+                    current -= _minutes(request.attendance_id.check_in, request.attendance_id.check_out or now)
                 after = current + requested_minutes
                 request.day_total_text = f'{_fmt_minutes(day_minutes)} → {_fmt_minutes(after)}'
 
@@ -186,16 +170,6 @@ class AttendanceCorrectionRequest(models.Model):
                 vals.setdefault('original_check_in', attendance.check_in)
                 vals.setdefault('original_check_out', attendance.check_out)
         requests = super().create(vals_list)
-        for request in requests.filtered('merged_attendance_ids'):
-            employee = request.employee_id.sudo()
-            merged = request.merged_attendance_ids.sorted('check_in')
-            request.sudo().write({
-                'merged_segments': ' + '.join(
-                    f'{employee._quicklink_hhmm(att.check_in)} → {employee._quicklink_hhmm(att.check_out)}'
-                    for att in merged
-                ),
-                'merged_minutes': sum(_minutes(att.check_in, att.check_out) for att in merged),
-            })
         origin = self.env.context.get('quicklink_origin') or {}
         for request in requests:
             body = _('Solicitud enviada por %(name)s desde su enlace personal de fichaje.', name=request.employee_id.name)
@@ -214,15 +188,6 @@ class AttendanceCorrectionRequest(models.Model):
         if not self.env.su and PROTECTED_FIELDS & set(vals):
             raise UserError(_('Los datos de la solicitud los envía el empleado y no se pueden modificar.'))
         return super().write(vals)
-
-    @api.model
-    def _pending_for(self, attendances):
-        if not attendances:
-            return 0
-        return self.sudo().search_count([
-            ('state', '=', 'pending'),
-            '|', ('attendance_id', 'in', attendances.ids), ('merged_attendance_ids', 'in', attendances.ids),
-        ])
 
     def _user_can_resolve(self):
         self.ensure_one()
@@ -264,7 +229,6 @@ class AttendanceCorrectionRequest(models.Model):
             attendance = self.attendance_id.sudo().exists()
             if not attendance:
                 raise UserError(_('El fichaje original ya no existe: no se puede aplicar la corrección.'))
-            self.merged_attendance_ids.sudo().exists().unlink()
             attendance.write(values)
         else:
             attendance = self.env['hr.attendance'].sudo().create({
@@ -274,16 +238,12 @@ class AttendanceCorrectionRequest(models.Model):
                 'out_mode': 'manual',
             })
             self.sudo().attendance_id = attendance
-        lines = [
-            _('Fichaje modificado al aprobar una solicitud de corrección de %(name)s (de %(old)s a %(new)s).',
-              name=self.employee_id.name, old=self.original_text, new=self.requested_text),
-        ]
-        if self.merged_segments:
-            lines.append(_('Se han unido en este fichaje los tramos %(segments)s, que se han eliminado.',
-                           segments=self.merged_segments))
-        lines.append(_('Motivo del empleado: %(reason)s', reason=self.reason))
         attendance.message_post(
-            body=Markup('<br/>').join(lines),
+            body=Markup('%s<br/>%s') % (
+                _('Fichaje modificado al aprobar una solicitud de corrección de %(name)s (de %(old)s a %(new)s).',
+                  name=self.employee_id.name, old=self.original_text, new=self.requested_text),
+                _('Motivo del empleado: %(reason)s', reason=self.reason),
+            ),
             message_type='comment',
             subtype_xmlid='mail.mt_note',
         )
@@ -322,7 +282,6 @@ class AttendanceCorrectionRequest(models.Model):
             'text': f'{employee._quicklink_hhmm(att.check_in)} → '
                     f'{employee._quicklink_hhmm(att.check_out) if att.check_out else _("sin salida")}',
             'target': att == self.attendance_id,
-            'merged': att in self.merged_attendance_ids,
         } for att in self.day_attendance_ids]
 
     def _quicklink_summary(self):
@@ -336,7 +295,6 @@ class AttendanceCorrectionRequest(models.Model):
             'original_out': employee._quicklink_hhmm(self.original_check_out),
             'requested_in': employee._quicklink_hhmm(self.requested_check_in),
             'requested_out': employee._quicklink_hhmm(self.requested_check_out),
-            'merged': self.merged_segments or False,
             'reason': self.reason,
             'state': self.state,
             'resolved_by': self.resolved_by_id.name or False,

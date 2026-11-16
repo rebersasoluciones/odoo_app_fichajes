@@ -97,11 +97,7 @@ export class SolicitudesScreen extends Component {
                 change = `${correction.requested_in} → ${correction.requested_out}`;
             } else {
                 title = `${day} · corrección`;
-                let original = `${correction.original_in} → ${correction.original_out || "sin salida"}`;
-                if (correction.merged) {
-                    title = `${day} · unir tramos`;
-                    original = `${original} + ${correction.merged}`;
-                }
+                const original = `${correction.original_in} → ${correction.original_out || "sin salida"}`;
                 change = `${original} ⇒ ${correction.requested_in} → ${correction.requested_out}`;
             }
             let note = correction.reason;
