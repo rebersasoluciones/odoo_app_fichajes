@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="attendance_quicklink.ReminderSheet">
+        <Sheet title="isEdit ? 'Editar aviso' : 'Nuevo aviso'" subtitle="'Solo te avisamos si a esa hora hace falta fichar'" onClose="props.onClose">
+            <div class="qf-field">
+                <span class="qf-field-label">Avisarme para fichar la</span>
+                <div class="qf-seg">
+                    <button type="button" class="qf-seg-btn" t-att-class="{ 'is-on': state.kind === 'in' }" t-att-aria-pressed="state.kind === 'in' ? 'true' : 'false'" t-on-click="() => this.state.kind = 'in'">Entrada</button>
+                    <button type="button" class="qf-seg-btn" t-att-class="{ 'is-on': state.kind === 'out' }" t-att-aria-pressed="state.kind === 'out' ? 'true' : 'false'" t-on-click="() => this.state.kind = 'out'">Salida</button>
+                </div>
+            </div>
+            <label class="qf-field">
+                <span class="qf-field-label">A las</span>
+                <input type="time" class="qf-input qf-input-time" t-model="state.time"/>
+            </label>
+            <div class="qf-field">
+                <span class="qf-field-label">Días</span>
+                <div class="qf-daychips">
+                    <t t-foreach="dayLetters" t-as="letter" t-key="letter_index">
+                        <button type="button" class="qf-daychip" t-att-class="{ 'is-on': state.days.includes(letter_index) }" t-att-aria-pressed="state.days.includes(letter_index) ? 'true' : 'false'" t-att-aria-label="dayNames[letter_index]" t-on-click="() => this.toggleDay(letter_index)" t-esc="letter"/>
+                    </t>
+                </div>
+            </div>
+            <div class="qf-note">
+                <Icon name="'bell'" size="16"/>
+                <span t-if="state.kind === 'in'">Te llegará si a esa hora aún no has fichado la entrada. No avisa en festivos ni en días de ausencia aprobada.</span>
+                <span t-else="">Te llegará si a esa hora sigues dentro. No avisa en festivos ni en días de ausencia aprobada.</span>
+            </div>
+            <div class="qf-form-error" t-if="state.error or (state.touched and validationError)" role="alert">
+                <t t-esc="state.error or validationError"/>
+            </div>
+            <t t-set-slot="footer">
+                <button type="button" class="qf-btn qf-btn-ghost qf-btn-danger" t-if="isEdit" t-att-disabled="state.busy" t-on-click="() => this.save(true)">
+                    <Icon name="'trash'" size="18"/>
+                    Borrar
+                </button>
+                <button type="button" class="qf-btn qf-btn-ghost" t-else="" t-on-click="() => props.onClose()">Cancelar</button>
+                <button type="button" class="qf-btn qf-btn-acc" t-att-disabled="state.busy" t-on-click="() => this.save()">
+                    <span class="qf-spinner qf-spinner-sm" t-if="state.busy"/>
+                    Guardar aviso
+                </button>
+            </t>
+        </Sheet>
+    </t>
+</templates>
